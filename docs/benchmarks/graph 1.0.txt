@@ -1,0 +1,45 @@
+
+==================== 🔥 RUNNING SIMPLE TEST (100 vectors) ====================
+📦 Generating 100 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0002 seconds
+  🔍 [ExactIndex] Query Time: 0.45 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 0.0120 seconds
+  🔍 [GraphIndex] Query Time: 1.19 ms
+
+📊 Performance Metrics for SIMPLE:
+  -> Recall Rate (Accuracy vs Ground Truth): 60.0%
+  -> Search Latency Comparison: Graph took 1.19ms vs Exact 0.45ms
+
+==================== 🔥 RUNNING MEDIUM TEST (1500 vectors) ====================
+📦 Generating 1500 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0032 seconds
+  🔍 [ExactIndex] Query Time: 2.96 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 7.1926 seconds
+  🔍 [GraphIndex] Query Time: 2.12 ms
+
+📊 Performance Metrics for MEDIUM:
+  -> Recall Rate (Accuracy vs Ground Truth): 20.0%
+  -> Search Latency Comparison: Graph took 2.12ms vs Exact 2.96ms
+
+==================== 🔥 RUNNING HARD TEST (8000 vectors) ====================
+📦 Generating 8000 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0208 seconds
+  🔍 [ExactIndex] Query Time: 15.27 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 186.0596 seconds
+  🔍 [GraphIndex] Query Time: 11.84 ms
+
+📊 Performance Metrics for HARD:
+  -> Recall Rate (Accuracy vs Ground Truth): 20.0%
+  -> Search Latency Comparison: Graph took 11.84ms vs Exact 15.27ms
