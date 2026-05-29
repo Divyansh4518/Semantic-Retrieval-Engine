@@ -1,0 +1,165 @@
+{
+  "timestamp": "2026-05-29T18:59:08.615761+05:30",
+  "git_commit": "52c2bd7",
+  "seed": 42,
+  "hyperparameters": {
+    "N": 5000,
+    "ef_construction": 32,
+    "ef_search": 64,
+    "dim": 128
+  },
+  "sweep": "B",
+  "variable": "M",
+  "results": [
+    {
+      "timestamp": "2026-05-29T18:56:54.919141+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 2,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "M": 2,
+      "build_time_s": 27.6339,
+      "graph_health": {
+        "total_edges": 3884,
+        "min_degree": 0,
+        "max_degree": 2,
+        "mean_degree": 1.5536,
+        "num_components": 1120,
+        "largest_component_size": 40,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.005311,
+        "p50": 0.005242,
+        "p95": 0.007569,
+        "max": 0.014549
+      },
+      "recall_mean": 0.003
+    },
+    {
+      "timestamp": "2026-05-29T18:57:31.587255+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 4,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "M": 4,
+      "build_time_s": 35.2574,
+      "graph_health": {
+        "total_edges": 8393,
+        "min_degree": 0,
+        "max_degree": 4,
+        "mean_degree": 3.3572,
+        "num_components": 20,
+        "largest_component_size": 4980,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.008973,
+        "p50": 0.008604,
+        "p95": 0.012811,
+        "max": 0.014551
+      },
+      "recall_mean": 0.078
+    },
+    {
+      "timestamp": "2026-05-29T18:58:00.949967+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "M": 8,
+      "build_time_s": 28.4141,
+      "graph_health": {
+        "total_edges": 17753,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.1012,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.005197,
+        "p50": 0.005131,
+        "p95": 0.005916,
+        "max": 0.006837
+      },
+      "recall_mean": 0.28
+    },
+    {
+      "timestamp": "2026-05-29T18:58:31.231751+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 16,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "M": 16,
+      "build_time_s": 29.0941,
+      "graph_health": {
+        "total_edges": 36842,
+        "min_degree": 7,
+        "max_degree": 16,
+        "mean_degree": 14.7368,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.007097,
+        "p50": 0.006643,
+        "p95": 0.00991,
+        "max": 0.019919
+      },
+      "recall_mean": 0.547
+    },
+    {
+      "timestamp": "2026-05-29T18:59:08.537650+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 32,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "M": 32,
+      "build_time_s": 35.661,
+      "graph_health": {
+        "total_edges": 75745,
+        "min_degree": 19,
+        "max_degree": 32,
+        "mean_degree": 30.298,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.010709,
+        "p50": 0.009951,
+        "p95": 0.015699,
+        "max": 0.016998
+      },
+      "recall_mean": 0.813
+    }
+  ]
+}

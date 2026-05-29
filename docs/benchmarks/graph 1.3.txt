@@ -1,0 +1,105 @@
+
+==================== 🔥 RUNNING SIMPLE TEST (100 vectors) ====================
+📦 Generating 100 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0004 seconds
+  🔍 [ExactIndex] Query Time: 0.54 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 0.0207 seconds
+
+=== GraphIndex Debug Stats ===
+Nodes: 100
+Edges: 745
+Average degree: 14.90
+Isolated nodes: 0
+Reachable nodes from DFS entry: 100
+==============================
+
+# === Search Debug ===
+Entry Node: 25
+Entry Similarity: 0.063711
+Nodes Evaluated: 100 / 100 (100.00%)
+Best Similarity Found: 0.089072
+Worst Returned Similarity: 0.073163
+Returned IDs: ['syn_64', 'syn_92', 'syn_83', 'syn_21', 'syn_55']
+  🔍 [GraphIndex] Query Time: 4.49 ms
+
+# === Recall Debug ===
+Exact IDs: ['syn_64', 'syn_92', 'syn_83', 'syn_21', 'syn_55']
+Graph IDs: ['syn_64', 'syn_92', 'syn_83', 'syn_21', 'syn_55']
+
+📊 Performance Metrics for SIMPLE:
+  -> Recall Rate (Accuracy vs Ground Truth): 100.0%
+  -> Search Latency Comparison: Graph took 4.49ms vs Exact 0.54ms
+
+==================== 🔥 RUNNING MEDIUM TEST (1500 vectors) ====================
+📦 Generating 1500 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0041 seconds
+  🔍 [ExactIndex] Query Time: 3.91 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 6.9180 seconds
+
+=== GraphIndex Debug Stats ===
+Nodes: 1500
+Edges: 11042
+Average degree: 14.72
+Isolated nodes: 0
+Reachable nodes from DFS entry: 1500
+==============================
+
+# === Search Debug ===
+Entry Node: 945
+Entry Similarity: 0.093022
+Nodes Evaluated: 256 / 1500 (17.07%)
+Best Similarity Found: 0.160522
+Worst Returned Similarity: 0.141801
+Returned IDs: ['syn_990', 'syn_934', 'syn_961', 'syn_1461', 'syn_308']
+  🔍 [GraphIndex] Query Time: 51.78 ms
+
+# === Recall Debug ===
+Exact IDs: ['syn_990', 'syn_934', 'syn_961', 'syn_1461', 'syn_308']
+Graph IDs: ['syn_990', 'syn_934', 'syn_961', 'syn_1461', 'syn_308']
+
+📊 Performance Metrics for MEDIUM:
+  -> Recall Rate (Accuracy vs Ground Truth): 100.0%
+  -> Search Latency Comparison: Graph took 51.78ms vs Exact 3.91ms
+
+==================== 🔥 RUNNING HARD TEST (8000 vectors) ====================
+📦 Generating 8000 synthetic vectors (384-dimensional)...
+
+⚡ Running Baseline (Exact Brute Force)...
+  🟢 [ExactIndex] Build Time: 0.0267 seconds
+  🔍 [ExactIndex] Query Time: 16.13 ms
+
+⚡ Running Graph Index Traversal...
+  🟢 [GraphIndex] Build Time: 299.0461 seconds
+
+=== GraphIndex Debug Stats ===
+Nodes: 8000
+Edges: 59035
+Average degree: 14.76
+Isolated nodes: 0
+Reachable nodes from DFS entry: 8000
+==============================
+
+# === Search Debug ===
+Entry Node: 4241
+Entry Similarity: 0.197450
+Nodes Evaluated: 256 / 8000 (3.20%)
+Best Similarity Found: 0.200157
+Worst Returned Similarity: 0.173947
+Returned IDs: ['syn_1856', 'syn_4241', 'syn_1570', 'syn_3715', 'syn_1441']
+  🔍 [GraphIndex] Query Time: 92.55 ms
+
+# === Recall Debug ===
+Exact IDs: ['syn_3528', 'syn_1856', 'syn_4241', 'syn_1570', 'syn_3715']
+Graph IDs: ['syn_1856', 'syn_4241', 'syn_1570', 'syn_3715', 'syn_1441']
+
+📊 Performance Metrics for HARD:
+  -> Recall Rate (Accuracy vs Ground Truth): 80.0%
+  -> Search Latency Comparison: Graph took 92.55ms vs Exact 16.13ms

@@ -41,6 +41,8 @@ def evaluate_index(index_class, name: str, documents: list[Document], query_vect
         idx.add_documents(documents)
         build_time = time.perf_counter() - start_build
         print(f"  🟢 [{name}] Build Time: {build_time:.4f} seconds")
+        if hasattr(idx, "debug_graph_stats"):
+            idx.debug_graph_stats()
     except Exception as e:
         print(f"  🔴 [{name}] Build Failed: {e}")
         return None, None
@@ -79,6 +81,12 @@ def run_test_tier(tier_name: str, num_docs: int):
     graph_res, graph_time = evaluate_index(GraphIndex, "GraphIndex", docs, query)
 
     if exact_res and graph_res:
+        exact_ids = [doc.id for doc, _ in exact_res]
+        graph_ids = [doc.id for doc, _ in graph_res]
+        print("\n# === Recall Debug ===")
+        print(f"Exact IDs: {exact_ids}")
+        print(f"Graph IDs: {graph_ids}")
+
         recall = calculate_recall(exact_res, graph_res)
         print(f"\n📊 Performance Metrics for {tier_name.upper()}:")
         print(f"  -> Recall Rate (Accuracy vs Ground Truth): {recall * 100:.1f}%")

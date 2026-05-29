@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-05-29T19:13:44.575154+05:30",
+  "git_commit": "52c2bd7",
+  "seed": 42,
+  "hyperparameters": {
+    "M": 8,
+    "ef_construction": 32,
+    "ef_search": 64,
+    "N": 5000
+  },
+  "sweep": "E",
+  "variable": "dim",
+  "results": [
+    {
+      "timestamp": "2026-05-29T19:01:55.075818+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "dim": 128,
+      "build_time_s": 40.0884,
+      "query_latency": {
+        "avg": 0.011248,
+        "p50": 0.011602,
+        "p95": 0.014056,
+        "max": 0.022827
+      },
+      "recall_mean": 0.268
+    },
+    {
+      "timestamp": "2026-05-29T19:03:38.193292+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 384
+      },
+      "dim": 384,
+      "build_time_s": 100.9026,
+      "query_latency": {
+        "avg": 0.011423,
+        "p50": 0.011239,
+        "p95": 0.013387,
+        "max": 0.016832
+      },
+      "recall_mean": 0.167
+    },
+    {
+      "timestamp": "2026-05-29T19:06:54.493875+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 768
+      },
+      "dim": 768,
+      "build_time_s": 190.8618,
+      "query_latency": {
+        "avg": 0.030229,
+        "p50": 0.02875,
+        "p95": 0.040792,
+        "max": 0.045419
+      },
+      "recall_mean": 0.121
+    },
+    {
+      "timestamp": "2026-05-29T19:13:44.489274+05:30",
+      "git_commit": "52c2bd7",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 1536
+      },
+      "dim": 1536,
+      "build_time_s": 400.2752,
+      "query_latency": {
+        "avg": 0.049204,
+        "p50": 0.047167,
+        "p95": 0.066486,
+        "max": 0.07042
+      },
+      "recall_mean": 0.118
+    }
+  ]
+}

@@ -34,3 +34,8 @@ build/
 
 # Logs
 *.log
+
+# Output
+# benchmarks/outputs/aggregated/
+benchmarks/outputs/raw/
+docs/Audit Reports/

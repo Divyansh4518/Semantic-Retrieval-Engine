@@ -85,3 +85,60 @@ To overcome the execution bottlenecks and topological constraints exposed by thi
 
 1. **Algorithmic Refinement (HNSW):** Transitioning from a flat NSW structure to a hierarchical multi-layer proximity graph (Hierarchical Navigable Small World - HNSW) to improve long-range routing efficiency and retrieval recall.
 2. **Systems Optimization (FAISS Integration):** Offloading vector search operations to optimized low-level C++ libraries such as FAISS to leverage SIMD acceleration, multi-threading, and memory-efficient vector quantization techniques.
+
+
+## 🔬 Benchmarking Framework
+
+To move beyond basic validation, a dedicated, reproducible benchmarking suite was engineered to mathematically map the absolute limits of the native Python Navigable Small World (NSW) architecture.
+
+This framework evaluates the system across multiple operational axes:
+- **Dataset scaling behavior:** Profiling $O(N^2)$ build time explosions and sub-linear query scaling.
+- **Graph density (`M`):** Measuring the threshold between graph fracturing and memory overhead.
+- **Search breadth (`ef_search`):** Profiling the Python interpreter loop overhead vs. recall precision.
+- **Construction breadth (`ef_construction`):** Tracing insertion routing quality.
+- **Dimensionality effects:** Observing the "Curse of Dimensionality" as embeddings scale.
+- **Graph connectivity:** Using graph traversal to track isolated components and undirected edge integrity.
+- **Recall vs. Latency tradeoffs:** Establishing the absolute limits of pure Python execution.
+
+**The suite automatically generates:**
+- Timestamped, seed-controlled JSON experiment logs (`outputs/raw/` and `outputs/aggregated/`).
+- Low-level graph diagnostics (Asymmetric edges, Degree distribution, Reachability).
+- Automated Matplotlib analytical plots.
+- Cross-cluster "Escape Success" matrices to evaluate local minima routing.
+
+### 📊 Key Empirical Findings
+
+| Diagnostic Metric | Empirical Observation | Systems Conclusion |
+| :--- | :--- | :--- |
+| **Topology (`M`)** | Increasing `M` from 2 → 32 improved recall from **0.3% to 81.3%**. | Sparse graphs ($M=2$) shatter into thousands of isolated components. Dense graphs heal the topology but drastically increase Python loop latency during greedy search. |
+| **Search Beam (`ef_search`)** | Increasing `ef_search` from 8 → 512 improved recall from **3.4% to 88.2%**. | Wide exploration significantly improves recall at the cost of increased traversal latency but chokes the Python interpreter, ultimately causing search times to scale slower than brute-force exact matrix math. |
+| **Dimensionality Curse** | Recall degraded significantly as embedding dimensionality increased from **128D to 1536D**. | In high-dimensional manifolds, equidistant vectors trap the greedy search, dropping accuracy and exploding distance calculation overhead during ingestion. |
+| **Local Minima Escape** | The cross-cluster "Escape Matrix" demonstrated near **0% success** when attempting to route between distant clusters. | A flat NSW graph cannot reliably escape dense gravity wells. **The results highlight the limitations of a flat NSW topology and motivate hierarchical routing approaches such as HNSW.** |
+
+### 📈 Telemetry Visualizations
+
+*(Visualizations generated automatically via the telemetry suite)*
+
+<p align="center">
+  <img src="benchmarks/outputs/figures/recall_vs_M.png" width="48%" alt="Recall vs M">
+  <img src="benchmarks/outputs/figures/recall_vs_ef_search.png" width="48%" alt="Recall vs ef_search">
+</p>
+<p align="center">
+  <img src="benchmarks/outputs/figures/build_time_vs_N.png" width="48%" alt="Build Time vs N">
+  <img src="benchmarks/outputs/figures/query_latency_vs_N.png" width="48%" alt="Query Latency vs N">
+</p>
+<p align="center">
+  <img src="benchmarks/outputs/figures/components_vs_N.png" width="48%" alt="Connected Components vs N">
+</p>
+
+### Reproducibility
+
+All experiments are deterministic and versioned.
+
+Each benchmark run records:
+- Random seed
+- Git commit hash
+- Timestamp
+- Hyperparameters
+- Raw per-query telemetry
+- Aggregated metrics
