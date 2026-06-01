@@ -170,7 +170,7 @@ def plot_recall_vs_M() -> None:
 
 
 def plot_build_time_vs_N() -> None:
-    """Log-scale line chart — Build Time vs dataset size ``N``."""
+    """Log-scale line chart -- Build Time vs N for all 3 engines."""
     path = _find_latest("sweep_a")
     if not path:
         print("  [SKIP] No sweep_a data found, skipping build_time_vs_N")
@@ -180,20 +180,34 @@ def plot_build_time_vs_N() -> None:
     results = data["results"]
 
     n_values = [r["N"] for r in results]
-    build_times = [r["build_time_s"] for r in results]
+    graph_times = [r.get("graph_build_time_s", r.get("build_time_s")) for r in results]
+    exact_times = [r.get("exact_build_time_s", 0) for r in results]
+    faiss_times = [r.get("faiss_build_time_s", 0) for r in results]
 
     _apply_style()
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(
-        n_values, build_times,
+        n_values, graph_times,
         marker="^", color=_COLORS["accent"],
-        linewidth=2, markersize=7, zorder=3,
+        linewidth=2, markersize=7, label="GraphIndex", zorder=3,
     )
-    ax.fill_between(n_values, build_times, alpha=0.15, color=_COLORS["accent"])
+    if any(t > 0 for t in exact_times):
+        ax.plot(
+            n_values, exact_times,
+            marker="o", color=_COLORS["primary"],
+            linewidth=2, markersize=7, label="ExactIndex", zorder=3,
+        )
+    if any(t > 0 for t in faiss_times):
+        ax.plot(
+            n_values, faiss_times,
+            marker="s", color=_COLORS["secondary"],
+            linewidth=2, markersize=7, label="FaissFlatIndex", zorder=3,
+        )
     ax.set_xlabel("Dataset Size (N)")
     ax.set_ylabel("Build Time (seconds)")
     ax.set_title("Build Time vs. Dataset Size (Sweep A)")
     ax.set_yscale("log")
+    ax.legend(framealpha=0.3)
     ax.grid(True, linestyle="--", alpha=0.4)
     fig.tight_layout()
 
@@ -297,6 +311,102 @@ def plot_components_vs_N() -> None:
 
 
 # ------------------------------------------------------------------
+# Chart: QPS vs N — Sweep F
+# ------------------------------------------------------------------
+
+
+def plot_sweep_f_qps_vs_N() -> None:
+    """Line chart -- QPS of ExactIndex vs FaissFlatIndex as N scales."""
+    path = _find_latest("sweep_f")
+    if not path:
+        print("  [SKIP] No sweep_f data found, skipping sweep_f_qps_vs_N")
+        return
+
+    data = _load_json(path)
+    results = data["results"]
+
+    n_values = [r["N"] for r in results]
+    exact_qps = [r["exact_query_latency"]["qps"] for r in results]
+    faiss_qps = [r["faiss_query_latency"]["qps"] for r in results]
+
+    _apply_style()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        n_values, exact_qps,
+        marker="o", color=_COLORS["primary"],
+        linewidth=2, markersize=7, label="ExactIndex (NumPy)", zorder=3,
+    )
+    ax.plot(
+        n_values, faiss_qps,
+        marker="s", color=_COLORS["secondary"],
+        linewidth=2, markersize=7, label="FaissFlatIndex (C++)", zorder=3,
+    )
+    ax.fill_between(n_values, exact_qps, faiss_qps, alpha=0.1, color=_COLORS["muted"])
+    ax.set_xlabel("Dataset Size (N)")
+    ax.set_ylabel("Queries Per Second (QPS)")
+    ax.set_title("QPS vs. Dataset Size (Sweep F)")
+    ax.legend(framealpha=0.3)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    fig.tight_layout()
+
+    out = _FIG_DIR / "sweep_f_qps_vs_N.png"
+    fig.savefig(out, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
+# ------------------------------------------------------------------
+# Chart: Batch Throughput — Sweep G
+# ------------------------------------------------------------------
+
+
+def plot_sweep_g_batch_qps() -> None:
+    """Grouped bar chart -- Sequential vs Batched QPS for both engines."""
+    path = _find_latest("sweep_g")
+    if not path:
+        print("  [SKIP] No sweep_g data found, skipping sweep_g_batch_qps")
+        return
+
+    data = _load_json(path)
+    results = data["results"]
+
+    batch_labels = [str(r["batch_size"]) for r in results]
+    exact_seq = [r["exact_seq_qps"] for r in results]
+    exact_batch = [r["exact_batch_qps"] for r in results]
+    faiss_seq = [r["faiss_seq_qps"] for r in results]
+    faiss_batch = [r["faiss_batch_qps"] for r in results]
+
+    x = np.arange(len(batch_labels))
+    width = 0.18
+
+    _apply_style()
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+    ax.bar(x - 1.5 * width, exact_seq, width,
+           label="Exact Sequential", color=_COLORS["primary"], zorder=3)
+    ax.bar(x - 0.5 * width, exact_batch, width,
+           label="Exact Batched", color=_COLORS["accent"], zorder=3)
+    ax.bar(x + 0.5 * width, faiss_seq, width,
+           label="FAISS Sequential", color=_COLORS["secondary"], zorder=3)
+    ax.bar(x + 1.5 * width, faiss_batch, width,
+           label="FAISS Batched", color=_COLORS["warn"], zorder=3)
+
+    ax.set_xlabel("Batch Size")
+    ax.set_ylabel("Queries Per Second (QPS)")
+    ax.set_title("Batch Throughput: Sequential vs Batched (Sweep G)")
+    ax.set_xticks(x)
+    ax.set_xticklabels(batch_labels)
+    ax.set_yscale("log")
+    ax.legend(framealpha=0.3, fontsize=9)
+    ax.grid(True, axis="y", linestyle="--", alpha=0.4)
+    fig.tight_layout()
+
+    out = _FIG_DIR / "sweep_g_batch_qps.png"
+    fig.savefig(out, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
+# ------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------
 
@@ -312,6 +422,8 @@ def generate_all() -> None:
     plot_build_time_vs_N()
     plot_query_latency_vs_N()
     plot_components_vs_N()
+    plot_sweep_f_qps_vs_N()
+    plot_sweep_g_batch_qps()
 
     print(f"\n[OK] All plots written to {_FIG_DIR}")
 

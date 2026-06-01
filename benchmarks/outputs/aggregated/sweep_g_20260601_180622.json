@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-06-01T18:06:22.548443+05:30",
+  "git_commit": "1c27890",
+  "seed": 42,
+  "hyperparameters": {
+    "N": 50000,
+    "dim": 128
+  },
+  "sweep": "G",
+  "variable": "batch_size",
+  "results": [
+    {
+      "timestamp": "2026-06-01T18:05:47.825365+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 50000,
+        "dim": 128,
+        "batch_size": 1
+      },
+      "batch_size": 1,
+      "exact_seq_qps": 40.11,
+      "faiss_seq_qps": 681.15,
+      "exact_batch_qps": 536.54,
+      "faiss_batch_qps": 1035.84,
+      "exact_seq_total_s": 0.024931,
+      "faiss_seq_total_s": 0.001468,
+      "exact_batch_total_s": 0.001864,
+      "faiss_batch_total_s": 0.000965
+    },
+    {
+      "timestamp": "2026-06-01T18:05:48.181785+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 50000,
+        "dim": 128,
+        "batch_size": 10
+      },
+      "batch_size": 10,
+      "exact_seq_qps": 34.16,
+      "faiss_seq_qps": 818.31,
+      "exact_batch_qps": 1121.76,
+      "faiss_batch_qps": 4258.04,
+      "exact_seq_total_s": 0.292717,
+      "faiss_seq_total_s": 0.01222,
+      "exact_batch_total_s": 0.008915,
+      "faiss_batch_total_s": 0.002349
+    },
+    {
+      "timestamp": "2026-06-01T18:05:50.682400+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 50000,
+        "dim": 128,
+        "batch_size": 100
+      },
+      "batch_size": 100,
+      "exact_seq_qps": 42.88,
+      "faiss_seq_qps": 1108.14,
+      "exact_batch_qps": 5961.39,
+      "faiss_batch_qps": 6014.02,
+      "exact_seq_total_s": 2.332277,
+      "faiss_seq_total_s": 0.090241,
+      "exact_batch_total_s": 0.016775,
+      "faiss_batch_total_s": 0.016628
+    },
+    {
+      "timestamp": "2026-06-01T18:06:22.492126+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 50000,
+        "dim": 128,
+        "batch_size": 1000
+      },
+      "batch_size": 1000,
+      "exact_seq_qps": 33.59,
+      "faiss_seq_qps": 619.61,
+      "exact_batch_qps": 3639.4,
+      "faiss_batch_qps": 10117.05,
+      "exact_seq_total_s": 29.773006,
+      "faiss_seq_total_s": 1.613913,
+      "exact_batch_total_s": 0.274771,
+      "faiss_batch_total_s": 0.098843
+    }
+  ]
+}

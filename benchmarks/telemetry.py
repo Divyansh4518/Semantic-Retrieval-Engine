@@ -161,19 +161,23 @@ def analyze_graph(graph_index: Any) -> dict[str, Any]:
 
 
 def compute_query_percentiles(latencies: list[float]) -> dict[str, float]:
-    """Compute avg, p50, p95, and max latency from per-query timings.
+    """Compute avg, p50, p95, max latency, and QPS from per-query timings.
 
-    All values are in seconds.
+    All latency values are in seconds.  ``qps`` is queries per second
+    computed as ``len(latencies) / sum(latencies)``.
     """
     if not latencies:
-        return {"avg": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0}
+        return {"avg": 0.0, "p50": 0.0, "p95": 0.0, "max": 0.0, "qps": 0.0}
 
     arr = np.array(latencies, dtype=float)
+    total_time = float(np.sum(arr))
+    qps = len(latencies) / total_time if total_time > 0 else 0.0
     return {
         "avg": round(float(np.mean(arr)), 6),
         "p50": round(float(np.percentile(arr, 50)), 6),
         "p95": round(float(np.percentile(arr, 95)), 6),
         "max": round(float(np.max(arr)), 6),
+        "qps": round(qps, 2),
     }
 
 
@@ -198,6 +202,24 @@ def compute_recall(
 
     graph_ids = {doc.id for doc, _ in graph_results[:k]}
     return len(exact_ids & graph_ids) / len(exact_ids)
+
+
+def compute_match_rate(
+    results_a: list[tuple],
+    results_b: list[tuple],
+) -> float:
+    """Return the overlap percentage (0.0 to 1.0) of Document IDs.
+
+    Both *results_a* and *results_b* are lists of ``(Document, score)``
+    tuples as returned by ``search()``.  This verifies that two exact
+    search implementations return identical result sets.
+    """
+    ids_a = {doc.id for doc, _ in results_a}
+    ids_b = {doc.id for doc, _ in results_b}
+    union = ids_a | ids_b
+    if not union:
+        return 1.0
+    return len(ids_a & ids_b) / len(union)
 
 
 # ---------------------------------------------------------------------------

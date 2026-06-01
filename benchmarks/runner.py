@@ -35,6 +35,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from src.index.exact import ExactIndex  # noqa: E402
+from src.index.faiss_flat import FaissFlatIndex  # noqa: E402
 from src.index.graph import GraphIndex  # noqa: E402
 from src.models import Document  # noqa: E402
 
@@ -46,6 +47,7 @@ from benchmarks.datasets import (  # noqa: E402
 from benchmarks.telemetry import (  # noqa: E402
     analyze_graph,
     capture_search_diagnostics,
+    compute_match_rate,
     compute_query_percentiles,
     compute_recall,
     measure_memory,
@@ -123,6 +125,82 @@ def _build_indices(
     build_time = time.perf_counter() - t0
 
     return graph_idx, exact_idx, build_time
+
+
+def _build_all_indices(
+    vectors: np.ndarray,
+    M: int,
+    ef_construction: int,
+    ef_search: int,
+) -> tuple[GraphIndex, ExactIndex, FaissFlatIndex, float, float, float]:
+    """Build all three indices.
+
+    Returns ``(graph_idx, exact_idx, faiss_idx,
+               graph_build_s, exact_build_s, faiss_build_s)``.
+    """
+    documents = _vectors_to_documents(vectors)
+
+    exact_idx = ExactIndex()
+    t0 = time.perf_counter()
+    exact_idx.add_documents(documents)
+    exact_build = time.perf_counter() - t0
+
+    faiss_idx = FaissFlatIndex()
+    t0 = time.perf_counter()
+    faiss_idx.add_documents(documents)
+    faiss_build = time.perf_counter() - t0
+
+    graph_idx = GraphIndex(M=M, ef_construction=ef_construction, ef_search=ef_search)
+    buf = io.StringIO()
+    t0 = time.perf_counter()
+    with contextlib.redirect_stdout(buf):
+        graph_idx.add_documents(documents)
+    graph_build = time.perf_counter() - t0
+
+    return graph_idx, exact_idx, faiss_idx, graph_build, exact_build, faiss_build
+
+
+def _build_flat_indices(
+    vectors: np.ndarray,
+) -> tuple[ExactIndex, FaissFlatIndex, float, float]:
+    """Build only ExactIndex and FaissFlatIndex (no GraphIndex).
+
+    Returns ``(exact_idx, faiss_idx, exact_build_s, faiss_build_s)``.
+    """
+    documents = _vectors_to_documents(vectors)
+
+    exact_idx = ExactIndex()
+    t0 = time.perf_counter()
+    exact_idx.add_documents(documents)
+    exact_build = time.perf_counter() - t0
+
+    faiss_idx = FaissFlatIndex()
+    t0 = time.perf_counter()
+    faiss_idx.add_documents(documents)
+    faiss_build = time.perf_counter() - t0
+
+    return exact_idx, faiss_idx, exact_build, faiss_build
+
+
+def _query_flat_index(
+    index: ExactIndex | FaissFlatIndex,
+    query_vectors: np.ndarray,
+    k: int = 10,
+) -> tuple[list[list[tuple]], list[float]]:
+    """Run sequential queries against a flat index.
+
+    Returns ``(all_results, latencies)``.
+    """
+    all_results: list[list[tuple]] = []
+    latencies: list[float] = []
+    for qi in range(query_vectors.shape[0]):
+        qvec = query_vectors[qi]
+        t0 = time.perf_counter()
+        results = index.search(qvec, k=k)
+        latency = time.perf_counter() - t0
+        all_results.append(results)
+        latencies.append(latency)
+    return all_results, latencies
 
 
 def _run_queries(
@@ -217,23 +295,46 @@ def sweep_a(seed: int = 42) -> None:
 
         graph_idx: GraphIndex | None = None
         exact_idx: ExactIndex | None = None
-        build_time = 0.0
+        faiss_idx: FaissFlatIndex | None = None
+        graph_build = 0.0
+        exact_build = 0.0
+        faiss_build = 0.0
 
         def _do_build() -> None:
-            nonlocal graph_idx, exact_idx, build_time
-            graph_idx, exact_idx, build_time = _build_indices(
-                vectors, M, ef_construction, ef_search
+            nonlocal graph_idx, exact_idx, faiss_idx
+            nonlocal graph_build, exact_build, faiss_build
+            graph_idx, exact_idx, faiss_idx, graph_build, exact_build, faiss_build = (
+                _build_all_indices(vectors, M, ef_construction, ef_search)
             )
 
         mem = measure_memory(_do_build)
 
-        assert graph_idx is not None and exact_idx is not None
+        assert graph_idx is not None and exact_idx is not None and faiss_idx is not None
 
         graph_health = analyze_graph(graph_idx)
         per_query, latencies, recalls = _run_queries(
             graph_idx, exact_idx, query_vectors, k=k
         )
         percentiles = compute_query_percentiles(latencies)
+
+        # FAISS sequential queries
+        faiss_results_list, faiss_latencies = _query_flat_index(
+            faiss_idx, query_vectors, k=k
+        )
+        faiss_percentiles = compute_query_percentiles(faiss_latencies)
+
+        # Exact sequential queries (for timing comparison)
+        exact_results_list, exact_latencies = _query_flat_index(
+            exact_idx, query_vectors, k=k
+        )
+        exact_percentiles = compute_query_percentiles(exact_latencies)
+
+        # Match rate: ExactIndex vs FaissFlatIndex
+        match_rates = [
+            compute_match_rate(er, fr)
+            for er, fr in zip(exact_results_list, faiss_results_list)
+        ]
+        mean_match_rate = round(float(np.mean(match_rates)), 4)
 
         meta = _metadata(
             seed, M=M, ef_construction=ef_construction,
@@ -248,17 +349,28 @@ def sweep_a(seed: int = 42) -> None:
         point = {
             **meta,
             "N": N,
-            "build_time_s": round(build_time, 4),
+            "graph_build_time_s": round(graph_build, 4),
+            "exact_build_time_s": round(exact_build, 4),
+            "faiss_build_time_s": round(faiss_build, 4),
+            "build_time_s": round(graph_build, 4),
             "memory": mem,
             "graph_health": graph_health,
             "query_latency": percentiles,
+            "exact_query_latency": exact_percentiles,
+            "faiss_query_latency": faiss_percentiles,
             "recall_mean": round(float(np.mean(recalls)), 4),
+            "exact_vs_faiss_match_rate": mean_match_rate,
         }
         sweep_results.append(point)
         print(
-            f"    Build: {build_time:.3f}s | "
-            f"Recall: {np.mean(recalls):.4f} | "
-            f"p95: {percentiles['p95'] * 1000:.1f}ms"
+            f"    Graph Build: {graph_build:.3f}s | "
+            f"Exact Build: {exact_build:.4f}s | "
+            f"FAISS Build: {faiss_build:.4f}s"
+        )
+        print(
+            f"    Graph Recall: {np.mean(recalls):.4f} | "
+            f"Match Rate: {mean_match_rate:.4f} | "
+            f"FAISS QPS: {faiss_percentiles['qps']:.0f}"
         )
 
     summary = {
@@ -534,14 +646,32 @@ def sweep_e(seed: int = 42) -> None:
         vectors = generate_at_dimension(N, dim, seed=seed)
         query_vectors = generate_at_dimension(n_queries, dim, seed=seed + 1)
 
-        graph_idx, exact_idx, build_time = _build_indices(
-            vectors, M, ef_construction, ef_search
+        graph_idx, exact_idx, faiss_idx, graph_build, exact_build, faiss_build = (
+            _build_all_indices(vectors, M, ef_construction, ef_search)
         )
 
         per_query, latencies, recalls = _run_queries(
             graph_idx, exact_idx, query_vectors, k=k
         )
         percentiles = compute_query_percentiles(latencies)
+
+        # FAISS queries
+        faiss_results_list, faiss_latencies = _query_flat_index(
+            faiss_idx, query_vectors, k=k
+        )
+        faiss_percentiles = compute_query_percentiles(faiss_latencies)
+
+        # Exact queries (timed)
+        exact_results_list, exact_latencies = _query_flat_index(
+            exact_idx, query_vectors, k=k
+        )
+        exact_percentiles = compute_query_percentiles(exact_latencies)
+
+        match_rates = [
+            compute_match_rate(er, fr)
+            for er, fr in zip(exact_results_list, faiss_results_list)
+        ]
+        mean_match_rate = round(float(np.mean(match_rates)), 4)
 
         meta = _metadata(
             seed, M=M, ef_construction=ef_construction,
@@ -556,14 +686,20 @@ def sweep_e(seed: int = 42) -> None:
         point = {
             **meta,
             "dim": dim,
-            "build_time_s": round(build_time, 4),
+            "build_time_s": round(graph_build, 4),
+            "exact_build_time_s": round(exact_build, 4),
+            "faiss_build_time_s": round(faiss_build, 4),
             "query_latency": percentiles,
+            "exact_query_latency": exact_percentiles,
+            "faiss_query_latency": faiss_percentiles,
             "recall_mean": round(float(np.mean(recalls)), 4),
+            "exact_vs_faiss_match_rate": mean_match_rate,
         }
         sweep_results.append(point)
         print(
-            f"    Recall: {np.mean(recalls):.4f} | "
-            f"p95: {percentiles['p95'] * 1000:.1f}ms"
+            f"    Graph Recall: {np.mean(recalls):.4f} | "
+            f"Match Rate: {mean_match_rate:.4f} | "
+            f"FAISS QPS: {faiss_percentiles['qps']:.0f}"
         )
 
     summary = {
@@ -576,6 +712,190 @@ def sweep_e(seed: int = 42) -> None:
 
 
 # ------------------------------------------------------------------
+# Sweep F — Implementation Scale (Exact vs FAISS)
+# ------------------------------------------------------------------
+
+
+def sweep_f(seed: int = 42) -> None:
+    """Compare ExactIndex vs FaissFlatIndex.  Sweep N over [5k..50k]."""
+    print("\n" + "=" * 60)
+    print("SWEEP F -- Implementation Scale (Exact vs FAISS)")
+    print("=" * 60)
+
+    dim = 128
+    n_values = [5000, 10000, 20000, 50000]
+    n_queries = 100
+    k = 10
+
+    all_raw: list[dict] = []
+    sweep_results: list[dict] = []
+
+    for N in n_values:
+        print(f"\n  N={N} ...")
+        vectors = generate_uniform(N, dim, seed=seed)
+        query_vectors = generate_uniform(n_queries, dim, seed=seed + 1)
+
+        exact_idx, faiss_idx, exact_build, faiss_build = _build_flat_indices(vectors)
+
+        # Sequential queries — Exact
+        exact_results_list, exact_latencies = _query_flat_index(
+            exact_idx, query_vectors, k=k
+        )
+        exact_percentiles = compute_query_percentiles(exact_latencies)
+
+        # Sequential queries — FAISS
+        faiss_results_list, faiss_latencies = _query_flat_index(
+            faiss_idx, query_vectors, k=k
+        )
+        faiss_percentiles = compute_query_percentiles(faiss_latencies)
+
+        # Match rate
+        match_rates = [
+            compute_match_rate(er, fr)
+            for er, fr in zip(exact_results_list, faiss_results_list)
+        ]
+        mean_match_rate = round(float(np.mean(match_rates)), 4)
+
+        meta = _metadata(seed, N=N, dim=dim)
+
+        for qi in range(n_queries):
+            all_raw.append({
+                **meta,
+                "query_index": qi,
+                "N": N,
+                "exact_latency_s": round(exact_latencies[qi], 6),
+                "faiss_latency_s": round(faiss_latencies[qi], 6),
+                "match_rate": round(match_rates[qi], 4),
+            })
+
+        point = {
+            **meta,
+            "N": N,
+            "exact_build_time_s": round(exact_build, 4),
+            "faiss_build_time_s": round(faiss_build, 4),
+            "exact_query_latency": exact_percentiles,
+            "faiss_query_latency": faiss_percentiles,
+            "exact_vs_faiss_match_rate": mean_match_rate,
+        }
+        sweep_results.append(point)
+        print(
+            f"    Exact Build: {exact_build:.4f}s | "
+            f"FAISS Build: {faiss_build:.4f}s"
+        )
+        print(
+            f"    Exact QPS: {exact_percentiles['qps']:.0f} | "
+            f"FAISS QPS: {faiss_percentiles['qps']:.0f} | "
+            f"Match: {mean_match_rate:.4f}"
+        )
+
+    summary = {
+        **_metadata(seed, dim=dim),
+        "sweep": "F",
+        "variable": "N",
+        "results": sweep_results,
+    }
+    _save_outputs("sweep_f", all_raw, summary)
+
+
+# ------------------------------------------------------------------
+# Sweep G — Batch Throughput (Sequential vs Batched Matrix Query)
+# ------------------------------------------------------------------
+
+
+def sweep_g(seed: int = 42) -> None:
+    """Fix N=50000.  Compare sequential vs batched matrix query throughput."""
+    print("\n" + "=" * 60)
+    print("SWEEP G -- Batch Throughput")
+    print("=" * 60)
+
+    N, dim = 50000, 128
+    batch_sizes = [1, 10, 100, 1000]
+    k = 10
+
+    vectors = generate_uniform(N, dim, seed=seed)
+    query_pool = generate_uniform(max(batch_sizes), dim, seed=seed + 1)
+
+    exact_idx, faiss_idx, exact_build, faiss_build = _build_flat_indices(vectors)
+
+    all_raw: list[dict] = []
+    sweep_results: list[dict] = []
+
+    for batch_size in batch_sizes:
+        print(f"\n  batch_size={batch_size} ...")
+        batch_queries = query_pool[:batch_size]
+
+        # --- Sequential querying (via .search wrapper) ---
+        _, exact_seq_latencies = _query_flat_index(exact_idx, batch_queries, k=k)
+        exact_seq_total = sum(exact_seq_latencies)
+        exact_seq_qps = batch_size / exact_seq_total if exact_seq_total > 0 else 0.0
+
+        _, faiss_seq_latencies = _query_flat_index(faiss_idx, batch_queries, k=k)
+        faiss_seq_total = sum(faiss_seq_latencies)
+        faiss_seq_qps = batch_size / faiss_seq_total if faiss_seq_total > 0 else 0.0
+
+        # --- Batched matrix querying (bypass .search wrapper) ---
+        # FAISS: use the raw _index.search with a batch matrix
+        batch_matrix_f32 = np.ascontiguousarray(
+            batch_queries.astype(np.float32)
+        )
+        # Normalize for inner product
+        norms = np.linalg.norm(batch_matrix_f32, axis=1, keepdims=True)
+        norms = np.maximum(norms, 1e-12)
+        batch_matrix_f32 = batch_matrix_f32 / norms
+
+        t0 = time.perf_counter()
+        faiss_idx._index.search(batch_matrix_f32, k)
+        faiss_batch_time = time.perf_counter() - t0
+        faiss_batch_qps = batch_size / faiss_batch_time if faiss_batch_time > 0 else 0.0
+
+        # Exact: raw NumPy dot product (matrix @ matrix.T)
+        batch_matrix_f64 = batch_queries.astype(float)
+        t0 = time.perf_counter()
+        exact_idx._embeddings @ batch_matrix_f64.T
+        exact_batch_time = time.perf_counter() - t0
+        exact_batch_qps = batch_size / exact_batch_time if exact_batch_time > 0 else 0.0
+
+        meta = _metadata(seed, N=N, dim=dim, batch_size=batch_size)
+
+        all_raw.append({
+            **meta,
+            "batch_size": batch_size,
+            "exact_seq_qps": round(exact_seq_qps, 2),
+            "faiss_seq_qps": round(faiss_seq_qps, 2),
+            "exact_batch_qps": round(exact_batch_qps, 2),
+            "faiss_batch_qps": round(faiss_batch_qps, 2),
+        })
+
+        point = {
+            **meta,
+            "batch_size": batch_size,
+            "exact_seq_qps": round(exact_seq_qps, 2),
+            "faiss_seq_qps": round(faiss_seq_qps, 2),
+            "exact_batch_qps": round(exact_batch_qps, 2),
+            "faiss_batch_qps": round(faiss_batch_qps, 2),
+            "exact_seq_total_s": round(exact_seq_total, 6),
+            "faiss_seq_total_s": round(faiss_seq_total, 6),
+            "exact_batch_total_s": round(exact_batch_time, 6),
+            "faiss_batch_total_s": round(faiss_batch_time, 6),
+        }
+        sweep_results.append(point)
+        print(
+            f"    Exact: seq={exact_seq_qps:.0f} QPS, batch={exact_batch_qps:.0f} QPS"
+        )
+        print(
+            f"    FAISS: seq={faiss_seq_qps:.0f} QPS, batch={faiss_batch_qps:.0f} QPS"
+        )
+
+    summary = {
+        **_metadata(seed, N=N, dim=dim),
+        "sweep": "G",
+        "variable": "batch_size",
+        "results": sweep_results,
+    }
+    _save_outputs("sweep_g", all_raw, summary)
+
+
+# ------------------------------------------------------------------
 # CLI
 # ------------------------------------------------------------------
 
@@ -585,6 +905,8 @@ _DISPATCH: dict[str, Any] = {
     "sweep-c": sweep_c,
     "sweep-d": sweep_d,
     "sweep-e": sweep_e,
+    "sweep-f": sweep_f,
+    "sweep-g": sweep_g,
 }
 
 

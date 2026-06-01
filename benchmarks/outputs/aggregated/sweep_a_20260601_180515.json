@@ -1,0 +1,231 @@
+{
+  "timestamp": "2026-06-01T18:05:15.445712+05:30",
+  "git_commit": "1c27890",
+  "seed": 42,
+  "hyperparameters": {
+    "M": 8,
+    "ef_construction": 32,
+    "ef_search": 64,
+    "dim": 128
+  },
+  "sweep": "A",
+  "variable": "N",
+  "results": [
+    {
+      "timestamp": "2026-06-01T18:04:33.674748+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 100,
+        "dim": 128
+      },
+      "N": 100,
+      "graph_build_time_s": 0.0076,
+      "exact_build_time_s": 0.0001,
+      "faiss_build_time_s": 0.0005,
+      "build_time_s": 0.0076,
+      "memory": {
+        "rss_before_mb": 49.53,
+        "rss_peak_mb": 50.22,
+        "rss_after_mb": 50.22
+      },
+      "graph_health": {
+        "total_edges": 354,
+        "min_degree": 3,
+        "max_degree": 8,
+        "mean_degree": 7.08,
+        "num_components": 1,
+        "largest_component_size": 100,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.001527,
+        "p50": 0.001456,
+        "p95": 0.002077,
+        "max": 0.002631,
+        "qps": 655.08
+      },
+      "exact_query_latency": {
+        "avg": 3.1e-05,
+        "p50": 2.9e-05,
+        "p95": 3.9e-05,
+        "max": 9.9e-05,
+        "qps": 32462.26
+      },
+      "faiss_query_latency": {
+        "avg": 2.6e-05,
+        "p50": 1.9e-05,
+        "p95": 5.9e-05,
+        "max": 0.000213,
+        "qps": 38223.37
+      },
+      "recall_mean": 0.999,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:04:34.016191+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 500,
+        "dim": 128
+      },
+      "N": 500,
+      "graph_build_time_s": 0.0721,
+      "exact_build_time_s": 0.0007,
+      "faiss_build_time_s": 0.0012,
+      "build_time_s": 0.0721,
+      "memory": {
+        "rss_before_mb": 53.12,
+        "rss_peak_mb": 55.64,
+        "rss_after_mb": 55.62
+      },
+      "graph_health": {
+        "total_edges": 1765,
+        "min_degree": 3,
+        "max_degree": 8,
+        "mean_degree": 7.06,
+        "num_components": 1,
+        "largest_component_size": 500,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.001826,
+        "p50": 0.001565,
+        "p95": 0.002862,
+        "max": 0.004372,
+        "qps": 547.5
+      },
+      "exact_query_latency": {
+        "avg": 7.3e-05,
+        "p50": 6.7e-05,
+        "p95": 0.000105,
+        "max": 0.000213,
+        "qps": 13662.69
+      },
+      "faiss_query_latency": {
+        "avg": 3.1e-05,
+        "p50": 2.5e-05,
+        "p95": 3.8e-05,
+        "max": 0.000368,
+        "qps": 32025.61
+      },
+      "recall_mean": 0.821,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:04:36.902045+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 1500,
+        "dim": 128
+      },
+      "N": 1500,
+      "graph_build_time_s": 2.4027,
+      "exact_build_time_s": 0.0022,
+      "faiss_build_time_s": 0.0039,
+      "build_time_s": 2.4027,
+      "memory": {
+        "rss_before_mb": 54.36,
+        "rss_peak_mb": 61.68,
+        "rss_after_mb": 60.2
+      },
+      "graph_health": {
+        "total_edges": 5337,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.116,
+        "num_components": 1,
+        "largest_component_size": 1500,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.00237,
+        "p50": 0.002122,
+        "p95": 0.003746,
+        "max": 0.004547,
+        "qps": 422.02
+      },
+      "exact_query_latency": {
+        "avg": 0.001024,
+        "p50": 0.001049,
+        "p95": 0.001468,
+        "max": 0.002055,
+        "qps": 976.69
+      },
+      "faiss_query_latency": {
+        "avg": 8.3e-05,
+        "p50": 8.1e-05,
+        "p95": 0.00011,
+        "max": 0.000195,
+        "qps": 12057.35
+      },
+      "recall_mean": 0.562,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:05:15.373374+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128
+      },
+      "N": 5000,
+      "graph_build_time_s": 36.5097,
+      "exact_build_time_s": 0.0069,
+      "faiss_build_time_s": 0.0146,
+      "build_time_s": 36.5097,
+      "memory": {
+        "rss_before_mb": 60.54,
+        "rss_peak_mb": 84.58,
+        "rss_after_mb": 79.54
+      },
+      "graph_health": {
+        "total_edges": 17753,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.1012,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.009203,
+        "p50": 0.00856,
+        "p95": 0.012037,
+        "max": 0.013643,
+        "qps": 108.67
+      },
+      "exact_query_latency": {
+        "avg": 0.00454,
+        "p50": 0.004146,
+        "p95": 0.006341,
+        "max": 0.006882,
+        "qps": 220.28
+      },
+      "faiss_query_latency": {
+        "avg": 0.000227,
+        "p50": 0.000218,
+        "p95": 0.000258,
+        "max": 0.000481,
+        "qps": 4404.7
+      },
+      "recall_mean": 0.297,
+      "exact_vs_faiss_match_rate": 1.0
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "timestamp": "2026-06-01T18:05:47.227200+05:30",
+  "git_commit": "1c27890",
+  "seed": 42,
+  "hyperparameters": {
+    "dim": 128
+  },
+  "sweep": "F",
+  "variable": "N",
+  "results": [
+    {
+      "timestamp": "2026-06-01T18:05:42.530585+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 5000,
+        "dim": 128
+      },
+      "N": 5000,
+      "exact_build_time_s": 0.007,
+      "faiss_build_time_s": 0.0172,
+      "exact_query_latency": {
+        "avg": 0.002514,
+        "p50": 0.002446,
+        "p95": 0.003312,
+        "max": 0.004297,
+        "qps": 397.7
+      },
+      "faiss_query_latency": {
+        "avg": 0.000137,
+        "p50": 0.000113,
+        "p95": 0.000325,
+        "max": 0.000436,
+        "qps": 7321.07
+      },
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:05:43.145917+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 10000,
+        "dim": 128
+      },
+      "N": 10000,
+      "exact_build_time_s": 0.0127,
+      "faiss_build_time_s": 0.0283,
+      "exact_query_latency": {
+        "avg": 0.004642,
+        "p50": 0.004531,
+        "p95": 0.005408,
+        "max": 0.007704,
+        "qps": 215.42
+      },
+      "faiss_query_latency": {
+        "avg": 0.000204,
+        "p50": 0.000191,
+        "p95": 0.000282,
+        "max": 0.000416,
+        "qps": 4901.14
+      },
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:05:44.360789+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 20000,
+        "dim": 128
+      },
+      "N": 20000,
+      "exact_build_time_s": 0.0381,
+      "faiss_build_time_s": 0.0703,
+      "exact_query_latency": {
+        "avg": 0.009435,
+        "p50": 0.008903,
+        "p95": 0.012619,
+        "max": 0.018823,
+        "qps": 105.99
+      },
+      "faiss_query_latency": {
+        "avg": 0.000382,
+        "p50": 0.000359,
+        "p95": 0.000505,
+        "max": 0.002131,
+        "qps": 2619.97
+      },
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-01T18:05:47.178243+05:30",
+      "git_commit": "1c27890",
+      "seed": 42,
+      "hyperparameters": {
+        "N": 50000,
+        "dim": 128
+      },
+      "N": 50000,
+      "exact_build_time_s": 0.0987,
+      "faiss_build_time_s": 0.1689,
+      "exact_query_latency": {
+        "avg": 0.022239,
+        "p50": 0.021264,
+        "p95": 0.030992,
+        "max": 0.038388,
+        "qps": 44.97
+      },
+      "faiss_query_latency": {
+        "avg": 0.000931,
+        "p50": 0.000804,
+        "p95": 0.00158,
+        "max": 0.002191,
+        "qps": 1074.19
+      },
+      "exact_vs_faiss_match_rate": 1.0
+    }
+  ]
+}
