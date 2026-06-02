@@ -1133,6 +1133,135 @@ def sweep_g(seed: int = 42) -> None:
 
 
 # ------------------------------------------------------------------
+# Sweep H — Industrial Scale: FaissFlatIndex vs FaissHNSWIndex
+# ------------------------------------------------------------------
+
+
+def sweep_h(seed: int = 42) -> None:
+    """Compare FaissFlatIndex vs FaissHNSWIndex at industrial scale.
+
+    Fixes M=32, ef_construction=200, ef_search=64 for HNSW.
+    Sweeps N over [5000, 10000, 20000, 50000].
+    Runs 100 sequential queries per N.
+    Recall is computed using FaissFlatIndex as 100% ground truth.
+    """
+    print("\n" + "=" * 60)
+    print("SWEEP H -- Industrial Scale: Exact vs ANN")
+    print("=" * 60)
+
+    dim = 128
+    n_values = [5000, 10000, 20000, 50000]
+    n_queries = 100
+    k = 10
+
+    all_raw: list[dict] = []
+    sweep_results: list[dict] = []
+
+    for N in n_values:
+        print(f"\n  N={N} ...")
+        vectors = generate_uniform(N, dim, seed=seed)
+        query_vectors = generate_uniform(n_queries, dim, seed=seed + 1)
+        documents = _vectors_to_documents(vectors)
+
+        # --- Build FaissFlatIndex ---
+        flat_idx = FaissFlatIndex()
+        t0 = time.perf_counter()
+        flat_idx.add_documents(documents)
+        flat_build = time.perf_counter() - t0
+
+        # --- Build FaissHNSWIndex ---
+        hnsw_idx = FaissHNSWIndex(
+            M=_HNSW_M,
+            ef_construction=_HNSW_EF_CONSTRUCTION,
+            ef_search=_HNSW_EF_SEARCH,
+        )
+        t0 = time.perf_counter()
+        hnsw_idx.add_documents(documents)
+        hnsw_build = time.perf_counter() - t0
+
+        # --- Sequential queries: FaissFlatIndex (ground truth) ---
+        flat_results_list, flat_latencies = _query_flat_index(
+            flat_idx, query_vectors, k=k
+        )
+        flat_percentiles = compute_query_percentiles(flat_latencies)
+
+        # --- Sequential queries: FaissHNSWIndex ---
+        hnsw_results_list, hnsw_latencies = _query_flat_index(
+            hnsw_idx, query_vectors, k=k
+        )
+        hnsw_percentiles = compute_query_percentiles(hnsw_latencies)
+
+        # --- Recall: HNSW vs Flat ground truth ---
+        hnsw_recalls = [
+            compute_recall(hnsw_results_list[qi], flat_results_list[qi], k)
+            for qi in range(n_queries)
+        ]
+        hnsw_recall_mean = round(float(np.mean(hnsw_recalls)), 4)
+
+        # Flat recall against itself is trivially 1.0 by definition
+        flat_recall_mean = 1.0
+
+        meta = _metadata(
+            seed, N=N, dim=dim,
+            hnsw_M=_HNSW_M,
+            hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+            hnsw_ef_search=_HNSW_EF_SEARCH,
+        )
+
+        for qi in range(n_queries):
+            all_raw.append({
+                **meta,
+                "query_index": qi,
+                "N": N,
+                "flat_latency_s": round(flat_latencies[qi], 8),
+                "hnsw_latency_s": round(hnsw_latencies[qi], 8),
+                "hnsw_recall": round(hnsw_recalls[qi], 4),
+            })
+
+        point = {
+            **meta,
+            "N": N,
+            # Build times
+            "flat_build_time_s": round(flat_build, 6),
+            "hnsw_build_time_s": round(hnsw_build, 6),
+            # Latency percentiles
+            "flat_query_latency": flat_percentiles,
+            "hnsw_query_latency": hnsw_percentiles,
+            # Recall
+            "flat_recall_mean": flat_recall_mean,
+            "hnsw_recall_mean": hnsw_recall_mean,
+        }
+        sweep_results.append(point)
+        print(
+            f"    Flat  -> Build: {flat_build:.4f}s | "
+            f"QPS: {flat_percentiles['qps']:>8.0f} | "
+            f"p50: {flat_percentiles['p50']*1000:.4f}ms | "
+            f"Recall: {flat_recall_mean:.4f}"
+        )
+        print(
+            f"    HNSW  -> Build: {hnsw_build:.4f}s | "
+            f"QPS: {hnsw_percentiles['qps']:>8.0f} | "
+            f"p50: {hnsw_percentiles['p50']*1000:.4f}ms | "
+            f"Recall: {hnsw_recall_mean:.4f}"
+        )
+        crossover = "HNSW faster" if hnsw_percentiles["qps"] > flat_percentiles["qps"] else "Flat faster"
+        print(f"    QPS winner: {crossover}")
+
+    summary = {
+        **_metadata(
+            seed, dim=dim,
+            hnsw_M=_HNSW_M,
+            hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+            hnsw_ef_search=_HNSW_EF_SEARCH,
+        ),
+        "sweep": "H",
+        "variable": "N",
+        "results": sweep_results,
+    }
+    _save_outputs("sweep_h", all_raw, summary)
+
+
+# ------------------------------------------------------------------
 # CLI
 # ------------------------------------------------------------------
 
@@ -1144,6 +1273,7 @@ _DISPATCH: dict[str, Any] = {
     "sweep-e": sweep_e,
     "sweep-f": sweep_f,
     "sweep-g": sweep_g,
+    "sweep-h": sweep_h,
 }
 
 

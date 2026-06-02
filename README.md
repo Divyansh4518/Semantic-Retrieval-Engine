@@ -183,3 +183,54 @@ Ultimately, this repository documents a complete lifecycle of retrieval infrastr
 | Worst Graph Fragmentation | 1,136 Components |
 | Graph Recall at M=20 | 0.3% |
 | Graph Build-Time Gap | ~2,500× slower |
+
+## 🏁 Industrial Scale Scaling Analysis: Brute Force vs. ANN
+
+To close the loop on our system design exploration, **Sweep H** evaluated the performance of our production-grade baseline against an approximate approach at an industrial scale. This experiment compared `FaissFlatIndex` (C++ Exhaustive Brute Force) directly against `FaissHNSWIndex` (C++ Hierarchical Navigable Small World) as the corpus size scaled up to **50,000 vectors** in a 128-dimensional space. 
+
+The goal was to answer the fundamental infrastructure question: **At what exact scale does the overhead of graph traversal become worth it compared to raw matrix multiplication?**
+
+### 📊 Industrial Performance Comparison (Sweep H Summary)
+
+Sequential query execution metrics mapped across variable corpus sizes ($N$):
+
+| Corpus Size ($N$) | Flat Throughput (QPS) | HNSW Throughput (QPS) | Flat $p50$ Latency | HNSW $p50$ Latency | Flat $p95$ Latency | HNSW $p95$ Latency | HNSW Recall | Definitive Winner |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **5,000** | **8,675** | 7,031 | 0.096 ms | 0.134 ms | 0.132 ms | 0.164 ms | 0.9360 | 🥇 **FaissFlatIndex** |
+| **10,000** | 4,903 | **5,615** | 0.182 ms | 0.168 ms | 0.302 ms | 0.239 ms | 0.8810 | 🚀 **FaissHNSWIndex** *(Crossover)* |
+| **20,000** | 2,468 | **3,066** | 0.273 ms | 0.306 ms | 0.704 ms | 0.470 ms | 0.7680 | 🚀 **FaissHNSWIndex** |
+| **50,000** | 476 | **954** | 2.090 ms | 1.008 ms | 2.598 ms | 1.329 ms | 0.6020 | 🚀 **FaissHNSWIndex** *(2.0x Gain)* |
+
+---
+
+### 🧠 Core Architectural Insights & Telemetry Breakdown
+
+#### 1. Pinpointing the CPU L3 Cache Boundary ($N = 10,000$)
+The empirical data reveals that **the first observed crossover occurred at $N=10,000$**. 
+* **The Mechanics:** At $N=5,000$, `FaissFlatIndex` relies on a highly optimized BLAS `SGEMM` matrix multiplication routine. At this size, the data array fits entirely within the CPU's localized L2/L3 cache, making contiguous memory sweeps unbelievably fast. 
+* **The Breakpoint:** One plausible explanation is that the working set increasingly exceeds CPU cache capacity, causing brute-force search to become more memory-bandwidth bound as N grows. The brute force index immediately gets hit with linear scaling penalties $O(N)$. Conversely, HNSW only visits a bounded $O(\log N)$ subset of elements via its hierarchical skip-lists, successfully bypassing the main memory bandwidth wall. By $N=50,000$, HNSW delivers **double the throughput (954 QPS vs. 476 QPS)**.
+
+#### 2. Suppressing Tail Latency ($p95$)
+In production environments, infrastructure health is dictated by worst-case tail latencies rather than ideal averages. As memory pressure scales at $N=50,000$, `FaissFlatIndex` shows significant tail degradation ($p95$ stretching to **2.598 ms**). Because the depth of a hierarchical search graph is bounded mathematically, `FaissHNSWIndex` tightly caps its tail, serving a $p95$ of **1.329 ms**—maintaining a predictable, deterministic response loop under load.
+
+#### 3. Navigating the Unforgiving Recall-Latency Tradeoff
+As $N$ scaled to 50,000 with a fixed beam-width of `ef_search=64`, HNSW recall dropped down to **60.2%**. This beautifully highlights the core compromise of Approximate Nearest Neighbor search:
+* Keeping a fixed probe budget (`ef_search=64`) while the underlying dataset scales 10x means the search agent explores a shrinking fraction of the total space (dropping from ~1.3% of the corpus to ~0.13%).
+* **Production Tuning Resolution:** Based on our prior topological sweeps (**Sweep C**). Prior ef_search sweeps suggest that increasing ef_search to 256–512 would substantially recover recall, though this should be verified experimentally at $N=50,000$. This expands the graph traversal beam width, providing a customizable slider to perfectly balance target accuracy against system throughput.
+
+#### 4. Ingestion Overhead (The One-Time Tax)
+At $N=50,000$, `FaissHNSWIndex` required **17.01 seconds** to build, compared to just **0.18 seconds** for the flat matrix. This **93x slower build time** represents the heavy algorithmic price of construction: running a 200-wide beam search (`ef_construction=200`) to correctly route and weave bidirectional links for every incoming vector. This profile validates HNSW as a classic read-heavy architecture: we invest heavy compute upfront during ingestion to buy logarithmic speed during runtime queries.
+
+---
+
+### 📉 Industrial Scaling Visualizations
+
+*(Visualizations generated automatically via the Sweep H telemetry module)*
+
+<p align="center">
+  <img src="benchmarks/outputs/figures/sweep_h_qps_vs_N.png" width="31%" alt="QPS Crossover Curve">
+  <img src="benchmarks/outputs/figures/sweep_h_latency_vs_N.png" width="31%" alt="p50 and p95 Tail Latency Scaling">
+  <img src="benchmarks/outputs/figures/sweep_h_recall_vs_N.png" width="31%" alt="HNSW Recall Decay vs Dataset Size">
+</p>
+
+**Key Result:** On this hardware and workload (128-dimensional vectors), HNSW first outperformed exhaustive search at approximately $N=10,000$ vectors, achieving 2× higher throughput by $N=50,000$ at the cost of reduced recall under a fixed ef_search budget.

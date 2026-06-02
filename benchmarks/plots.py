@@ -479,6 +479,148 @@ def plot_sweep_g_batch_qps() -> None:
 
 
 # ------------------------------------------------------------------
+# Charts: Sweep H -- Industrial Scale (FlatIndex vs HNSWIndex)
+# ------------------------------------------------------------------
+
+
+def plot_sweep_h_qps_vs_N() -> None:
+    """Line chart -- QPS of FaissFlatIndex vs FaissHNSWIndex as N scales (Sweep H)."""
+    path = _find_latest("sweep_h")
+    if not path:
+        print("  [SKIP] No sweep_h data found, skipping sweep_h_qps_vs_N")
+        return
+
+    data = _load_json(path)
+    results = data["results"]
+
+    n_values  = [r["N"] for r in results]
+    flat_qps  = [r["flat_query_latency"]["qps"] for r in results]
+    hnsw_qps  = [r["hnsw_query_latency"]["qps"] for r in results]
+
+    # Find crossover point (first N where HNSW QPS > Flat QPS)
+    crossover_N = None
+    for r in results:
+        if r["hnsw_query_latency"]["qps"] > r["flat_query_latency"]["qps"]:
+            crossover_N = r["N"]
+            break
+
+    _apply_style()
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(
+        n_values, flat_qps,
+        marker="s", color=_COLORS["secondary"],
+        linewidth=2, markersize=7, label="FaissFlatIndex (ground truth)", zorder=3,
+    )
+    ax.plot(
+        n_values, hnsw_qps,
+        marker="D", color=_COLORS["hnsw"],
+        linewidth=2, markersize=7, label="FaissHNSWIndex", zorder=3,
+    )
+    ax.fill_between(n_values, flat_qps, hnsw_qps, alpha=0.08, color=_COLORS["muted"])
+    if crossover_N is not None:
+        ax.axvline(x=crossover_N, color=_COLORS["warn"], linestyle="--",
+                   linewidth=1.5, label=f"Crossover @ N={crossover_N:,}")
+    ax.set_xlabel("Dataset Size (N)")
+    ax.set_ylabel("Queries Per Second (QPS)")
+    ax.set_title("QPS vs. Dataset Size -- FlatIndex vs HNSW (Sweep H)")
+    ax.legend(framealpha=0.3)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    fig.tight_layout()
+
+    out = _FIG_DIR / "sweep_h_qps_vs_N.png"
+    fig.savefig(out, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
+def plot_sweep_h_latency_vs_N() -> None:
+    """Dual-panel line chart -- p50 and p95 latency for Flat vs HNSW (Sweep H)."""
+    path = _find_latest("sweep_h")
+    if not path:
+        print("  [SKIP] No sweep_h data found, skipping sweep_h_latency_vs_N")
+        return
+
+    data = _load_json(path)
+    results = data["results"]
+
+    n_values   = [r["N"] for r in results]
+    flat_p50   = [r["flat_query_latency"]["p50"] * 1000 for r in results]
+    flat_p95   = [r["flat_query_latency"]["p95"] * 1000 for r in results]
+    hnsw_p50   = [r["hnsw_query_latency"]["p50"] * 1000 for r in results]
+    hnsw_p95   = [r["hnsw_query_latency"]["p95"] * 1000 for r in results]
+
+    _apply_style()
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5), sharey=False)
+
+    for ax, flat_vals, hnsw_vals, pct_label in [
+        (ax1, flat_p50, hnsw_p50, "p50"),
+        (ax2, flat_p95, hnsw_p95, "p95"),
+    ]:
+        ax.plot(
+            n_values, flat_vals,
+            marker="s", color=_COLORS["secondary"],
+            linewidth=2, markersize=7, label="FaissFlatIndex", zorder=3,
+        )
+        ax.plot(
+            n_values, hnsw_vals,
+            marker="D", color=_COLORS["hnsw"],
+            linewidth=2, markersize=7, label="FaissHNSWIndex", zorder=3,
+        )
+        ax.set_xlabel("Dataset Size (N)")
+        ax.set_ylabel(f"{pct_label} Latency (ms)")
+        ax.set_title(f"{pct_label} Latency vs. N (Sweep H)")
+        ax.legend(framealpha=0.3)
+        ax.grid(True, linestyle="--", alpha=0.4)
+
+    fig.suptitle("Query Latency: FlatIndex vs HNSW at Industrial Scale",
+                 fontsize=13, y=1.02)
+    fig.tight_layout()
+
+    out = _FIG_DIR / "sweep_h_latency_vs_N.png"
+    fig.savefig(out, facecolor=fig.get_facecolor(), bbox_inches="tight")
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
+def plot_sweep_h_recall_vs_N() -> None:
+    """Line chart -- HNSW Recall@10 vs N (FaissFlatIndex is fixed at 1.0) (Sweep H)."""
+    path = _find_latest("sweep_h")
+    if not path:
+        print("  [SKIP] No sweep_h data found, skipping sweep_h_recall_vs_N")
+        return
+
+    data = _load_json(path)
+    results = data["results"]
+
+    n_values    = [r["N"] for r in results]
+    flat_recall = [r["flat_recall_mean"] for r in results]   # always 1.0
+    hnsw_recall = [r["hnsw_recall_mean"] for r in results]
+
+    _apply_style()
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.axhline(y=1.0, color=_COLORS["secondary"], linestyle="--",
+               linewidth=1.5, label="FaissFlatIndex (ground truth = 1.0)", zorder=2)
+    ax.plot(
+        n_values, hnsw_recall,
+        marker="D", color=_COLORS["hnsw"],
+        linewidth=2, markersize=7, label="FaissHNSWIndex Recall@10", zorder=3,
+    )
+    ax.fill_between(n_values, hnsw_recall, 1.0, alpha=0.10, color=_COLORS["hnsw"])
+    ax.set_xlabel("Dataset Size (N)")
+    ax.set_ylabel("Recall@10")
+    ax.set_title("HNSW Recall@10 vs. Dataset Size -- Flat as Ground Truth (Sweep H)")
+    ax.legend(framealpha=0.3)
+    ax.grid(True, linestyle="--", alpha=0.4)
+    ax.set_ylim(0.8, 1.05)
+    fig.tight_layout()
+
+    out = _FIG_DIR / "sweep_h_recall_vs_N.png"
+    fig.savefig(out, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    print(f"  [OK] {out}")
+
+
+# ------------------------------------------------------------------
 # Main
 # ------------------------------------------------------------------
 
@@ -496,6 +638,9 @@ def generate_all() -> None:
     plot_components_vs_N()
     plot_sweep_f_qps_vs_N()
     plot_sweep_g_batch_qps()
+    plot_sweep_h_qps_vs_N()
+    plot_sweep_h_latency_vs_N()
+    plot_sweep_h_recall_vs_N()
 
     print(f"\n[OK] All plots written to {_FIG_DIR}")
 
