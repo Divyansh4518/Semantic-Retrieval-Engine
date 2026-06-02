@@ -1,0 +1,221 @@
+{
+  "timestamp": "2026-06-02T15:57:17.269913+05:30",
+  "git_commit": "d26f0ae",
+  "seed": 42,
+  "hyperparameters": {
+    "N": 5000,
+    "ef_construction": 32,
+    "ef_search": 64,
+    "dim": 128,
+    "hnsw_ef_construction": 200
+  },
+  "sweep": "B",
+  "variable": "M",
+  "results": [
+    {
+      "timestamp": "2026-06-02T15:55:22.611299+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 2,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_ef_construction": 200
+      },
+      "M": 2,
+      "build_time_s": 22.8871,
+      "faiss_hnsw_build_time_s": 0.0656,
+      "graph_health": {
+        "total_edges": 3884,
+        "min_degree": 0,
+        "max_degree": 2,
+        "mean_degree": 1.5536,
+        "num_components": 1120,
+        "largest_component_size": 40,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.002947,
+        "p50": 0.002795,
+        "p95": 0.003726,
+        "max": 0.00549,
+        "qps": 339.33
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 5.6e-05,
+        "p50": 5.2e-05,
+        "p95": 7.2e-05,
+        "max": 0.000225,
+        "qps": 17964.93
+      },
+      "recall_mean": 0.003,
+      "faiss_hnsw_recall_mean": 0.096
+    },
+    {
+      "timestamp": "2026-06-02T15:55:51.115055+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 4,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_ef_construction": 200
+      },
+      "M": 4,
+      "build_time_s": 27.1007,
+      "faiss_hnsw_build_time_s": 0.1095,
+      "graph_health": {
+        "total_edges": 8393,
+        "min_degree": 0,
+        "max_degree": 4,
+        "mean_degree": 3.3572,
+        "num_components": 20,
+        "largest_component_size": 4980,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.004897,
+        "p50": 0.0048,
+        "p95": 0.005556,
+        "max": 0.005835,
+        "qps": 204.23
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.00013,
+        "p50": 0.000114,
+        "p95": 0.000231,
+        "max": 0.000406,
+        "qps": 7665.6
+      },
+      "recall_mean": 0.07,
+      "faiss_hnsw_recall_mean": 0.308
+    },
+    {
+      "timestamp": "2026-06-02T15:56:19.185636+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_ef_construction": 200
+      },
+      "M": 8,
+      "build_time_s": 26.5723,
+      "faiss_hnsw_build_time_s": 0.1529,
+      "graph_health": {
+        "total_edges": 17753,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.1012,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.005052,
+        "p50": 0.004959,
+        "p95": 0.005737,
+        "max": 0.005979,
+        "qps": 197.95
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.00016,
+        "p50": 0.000135,
+        "p95": 0.000272,
+        "max": 0.000715,
+        "qps": 6231.58
+      },
+      "recall_mean": 0.281,
+      "faiss_hnsw_recall_mean": 0.558
+    },
+    {
+      "timestamp": "2026-06-02T15:56:47.884314+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 16,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_ef_construction": 200
+      },
+      "M": 16,
+      "build_time_s": 27.094,
+      "faiss_hnsw_build_time_s": 0.2091,
+      "graph_health": {
+        "total_edges": 36842,
+        "min_degree": 7,
+        "max_degree": 16,
+        "mean_degree": 14.7368,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.005461,
+        "p50": 0.005286,
+        "p95": 0.006308,
+        "max": 0.006543,
+        "qps": 183.1
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000186,
+        "p50": 0.00018,
+        "p95": 0.000214,
+        "max": 0.000387,
+        "qps": 5364.43
+      },
+      "recall_mean": 0.558,
+      "faiss_hnsw_recall_mean": 0.819
+    },
+    {
+      "timestamp": "2026-06-02T15:57:17.216711+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 32,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_ef_construction": 200
+      },
+      "M": 32,
+      "build_time_s": 27.4776,
+      "faiss_hnsw_build_time_s": 0.2599,
+      "graph_health": {
+        "total_edges": 75745,
+        "min_degree": 19,
+        "max_degree": 32,
+        "mean_degree": 30.298,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.006528,
+        "p50": 0.006234,
+        "p95": 0.007886,
+        "max": 0.012204,
+        "qps": 153.18
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000252,
+        "p50": 0.000245,
+        "p95": 0.000279,
+        "max": 0.000535,
+        "qps": 3964.1
+      },
+      "recall_mean": 0.824,
+      "faiss_hnsw_recall_mean": 0.937
+    }
+  ]
+}

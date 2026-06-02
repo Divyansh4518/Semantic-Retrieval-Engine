@@ -1,0 +1,248 @@
+{
+  "timestamp": "2026-06-02T15:58:15.656233+05:30",
+  "git_commit": "d26f0ae",
+  "seed": 42,
+  "hyperparameters": {
+    "M": 8,
+    "ef_construction": 32,
+    "N": 5000,
+    "dim": 128,
+    "hnsw_M": 32,
+    "hnsw_ef_construction": 200
+  },
+  "sweep": "C",
+  "variable": "ef_search",
+  "results": [
+    {
+      "timestamp": "2026-06-02T15:58:07.961500+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 8,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 8,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.003754,
+        "p50": 0.003712,
+        "p95": 0.00441,
+        "max": 0.00504,
+        "qps": 266.38
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 8.1e-05,
+        "p50": 6.6e-05,
+        "p95": 0.000156,
+        "max": 0.000342,
+        "qps": 12420.35
+      },
+      "recall_mean": 0.031,
+      "faiss_hnsw_recall_mean": 0.427
+    },
+    {
+      "timestamp": "2026-06-02T15:58:08.681023+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 16,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 16,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.003595,
+        "p50": 0.003472,
+        "p95": 0.004257,
+        "max": 0.005231,
+        "qps": 278.13
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 9.3e-05,
+        "p50": 8.2e-05,
+        "p95": 0.000166,
+        "max": 0.000243,
+        "qps": 10752.0
+      },
+      "recall_mean": 0.063,
+      "faiss_hnsw_recall_mean": 0.618
+    },
+    {
+      "timestamp": "2026-06-02T15:58:09.501869+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 32,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 32,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.004383,
+        "p50": 0.004292,
+        "p95": 0.004803,
+        "max": 0.007248,
+        "qps": 228.13
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000142,
+        "p50": 0.000127,
+        "p95": 0.000213,
+        "max": 0.000328,
+        "qps": 7047.66
+      },
+      "recall_mean": 0.166,
+      "faiss_hnsw_recall_mean": 0.811
+    },
+    {
+      "timestamp": "2026-06-02T15:58:10.385170+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 64,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.005133,
+        "p50": 0.005022,
+        "p95": 0.00602,
+        "max": 0.006759,
+        "qps": 194.8
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000218,
+        "p50": 0.000197,
+        "p95": 0.000347,
+        "max": 0.000645,
+        "qps": 4584.11
+      },
+      "recall_mean": 0.284,
+      "faiss_hnsw_recall_mean": 0.943
+    },
+    {
+      "timestamp": "2026-06-02T15:58:11.480765+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 128,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 128,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.00717,
+        "p50": 0.006957,
+        "p95": 0.007929,
+        "max": 0.009915,
+        "qps": 139.46
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.00035,
+        "p50": 0.000325,
+        "p95": 0.000528,
+        "max": 0.000678,
+        "qps": 2859.1
+      },
+      "recall_mean": 0.481,
+      "faiss_hnsw_recall_mean": 0.991
+    },
+    {
+      "timestamp": "2026-06-02T15:58:13.018515+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 256,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 256,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.011255,
+        "p50": 0.011019,
+        "p95": 0.013076,
+        "max": 0.016043,
+        "qps": 88.85
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000593,
+        "p50": 0.000538,
+        "p95": 0.000836,
+        "max": 0.001554,
+        "qps": 1687.69
+      },
+      "recall_mean": 0.694,
+      "faiss_hnsw_recall_mean": 1.0
+    },
+    {
+      "timestamp": "2026-06-02T15:58:15.591284+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 512,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200
+      },
+      "ef_search": 512,
+      "build_time_s": 25.4531,
+      "faiss_hnsw_build_time_s": 0.3159,
+      "query_latency": {
+        "avg": 0.020907,
+        "p50": 0.020371,
+        "p95": 0.026016,
+        "max": 0.035274,
+        "qps": 47.83
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.001089,
+        "p50": 0.001046,
+        "p95": 0.001515,
+        "max": 0.002372,
+        "qps": 918.57
+      },
+      "recall_mean": 0.88,
+      "faiss_hnsw_recall_mean": 1.0
+    }
+  ]
+}

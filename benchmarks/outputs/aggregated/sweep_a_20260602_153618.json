@@ -1,0 +1,282 @@
+{
+  "timestamp": "2026-06-02T15:36:18.011775+05:30",
+  "git_commit": "d26f0ae",
+  "seed": 42,
+  "hyperparameters": {
+    "M": 8,
+    "ef_construction": 32,
+    "ef_search": 64,
+    "dim": 128,
+    "hnsw_M": 32,
+    "hnsw_ef_construction": 200,
+    "hnsw_ef_search": 64
+  },
+  "sweep": "A",
+  "variable": "N",
+  "results": [
+    {
+      "timestamp": "2026-06-02T15:35:51.604412+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 100,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200,
+        "hnsw_ef_search": 64
+      },
+      "N": 100,
+      "graph_build_time_s": 0.009,
+      "exact_build_time_s": 0.0002,
+      "faiss_build_time_s": 0.0005,
+      "faiss_hnsw_build_time_s": 0.0021,
+      "build_time_s": 0.009,
+      "memory": {
+        "rss_before_mb": 49.53,
+        "rss_peak_mb": 50.44,
+        "rss_after_mb": 50.44
+      },
+      "graph_health": {
+        "total_edges": 354,
+        "min_degree": 3,
+        "max_degree": 8,
+        "mean_degree": 7.08,
+        "num_components": 1,
+        "largest_component_size": 100,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.001373,
+        "p50": 0.001265,
+        "p95": 0.002222,
+        "max": 0.002412,
+        "qps": 728.17
+      },
+      "exact_query_latency": {
+        "avg": 2.4e-05,
+        "p50": 2.2e-05,
+        "p95": 2.8e-05,
+        "max": 0.000111,
+        "qps": 42533.27
+      },
+      "faiss_query_latency": {
+        "avg": 1.7e-05,
+        "p50": 1.3e-05,
+        "p95": 2.2e-05,
+        "max": 0.000225,
+        "qps": 59350.7
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 2.9e-05,
+        "p50": 2.8e-05,
+        "p95": 3.4e-05,
+        "max": 0.000109,
+        "qps": 33913.24
+      },
+      "recall_mean": 0.999,
+      "faiss_hnsw_recall_mean": 1.0,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-02T15:35:51.917541+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 500,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200,
+        "hnsw_ef_search": 64
+      },
+      "N": 500,
+      "graph_build_time_s": 0.092,
+      "exact_build_time_s": 0.0006,
+      "faiss_build_time_s": 0.0011,
+      "faiss_hnsw_build_time_s": 0.007,
+      "build_time_s": 0.092,
+      "memory": {
+        "rss_before_mb": 53.61,
+        "rss_peak_mb": 57.65,
+        "rss_after_mb": 57.64
+      },
+      "graph_health": {
+        "total_edges": 1765,
+        "min_degree": 3,
+        "max_degree": 8,
+        "mean_degree": 7.06,
+        "num_components": 1,
+        "largest_component_size": 500,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.001364,
+        "p50": 0.001257,
+        "p95": 0.001996,
+        "max": 0.002688,
+        "qps": 733.3
+      },
+      "exact_query_latency": {
+        "avg": 8.2e-05,
+        "p50": 6.7e-05,
+        "p95": 0.000122,
+        "max": 0.000506,
+        "qps": 12242.9
+      },
+      "faiss_query_latency": {
+        "avg": 3.1e-05,
+        "p50": 2.4e-05,
+        "p95": 4e-05,
+        "max": 0.000268,
+        "qps": 32477.02
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 5.8e-05,
+        "p50": 5.6e-05,
+        "p95": 6.5e-05,
+        "max": 0.000156,
+        "qps": 17106.59
+      },
+      "recall_mean": 0.817,
+      "faiss_hnsw_recall_mean": 0.998,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-02T15:35:55.040393+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 1500,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200,
+        "hnsw_ef_search": 64
+      },
+      "N": 1500,
+      "graph_build_time_s": 2.5537,
+      "exact_build_time_s": 0.0021,
+      "faiss_build_time_s": 0.0042,
+      "faiss_hnsw_build_time_s": 0.0325,
+      "build_time_s": 2.5537,
+      "memory": {
+        "rss_before_mb": 55.59,
+        "rss_peak_mb": 66.14,
+        "rss_after_mb": 64.66
+      },
+      "graph_health": {
+        "total_edges": 5337,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.116,
+        "num_components": 1,
+        "largest_component_size": 1500,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.002648,
+        "p50": 0.002328,
+        "p95": 0.00399,
+        "max": 0.004821,
+        "qps": 377.71
+      },
+      "exact_query_latency": {
+        "avg": 0.000976,
+        "p50": 0.000916,
+        "p95": 0.001411,
+        "max": 0.003725,
+        "qps": 1025.06
+      },
+      "faiss_query_latency": {
+        "avg": 5.9e-05,
+        "p50": 4.4e-05,
+        "p95": 0.000125,
+        "max": 0.000417,
+        "qps": 16948.29
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000159,
+        "p50": 0.00015,
+        "p95": 0.000208,
+        "max": 0.000519,
+        "qps": 6279.36
+      },
+      "recall_mean": 0.551,
+      "faiss_hnsw_recall_mean": 0.99,
+      "exact_vs_faiss_match_rate": 1.0
+    },
+    {
+      "timestamp": "2026-06-02T15:36:17.965909+05:30",
+      "git_commit": "d26f0ae",
+      "seed": 42,
+      "hyperparameters": {
+        "M": 8,
+        "ef_construction": 32,
+        "ef_search": 64,
+        "N": 5000,
+        "dim": 128,
+        "hnsw_M": 32,
+        "hnsw_ef_construction": 200,
+        "hnsw_ef_search": 64
+      },
+      "N": 5000,
+      "graph_build_time_s": 21.5511,
+      "exact_build_time_s": 0.0081,
+      "faiss_build_time_s": 0.0193,
+      "faiss_hnsw_build_time_s": 0.1269,
+      "build_time_s": 21.5511,
+      "memory": {
+        "rss_before_mb": 62.8,
+        "rss_peak_mb": 91.49,
+        "rss_after_mb": 86.59
+      },
+      "graph_health": {
+        "total_edges": 17753,
+        "min_degree": 2,
+        "max_degree": 8,
+        "mean_degree": 7.1012,
+        "num_components": 1,
+        "largest_component_size": 5000,
+        "asymmetric_edge_count": 0
+      },
+      "query_latency": {
+        "avg": 0.005057,
+        "p50": 0.004994,
+        "p95": 0.005853,
+        "max": 0.00712,
+        "qps": 197.74
+      },
+      "exact_query_latency": {
+        "avg": 0.002971,
+        "p50": 0.002906,
+        "p95": 0.003349,
+        "max": 0.005239,
+        "qps": 336.55
+      },
+      "faiss_query_latency": {
+        "avg": 0.000173,
+        "p50": 0.000151,
+        "p95": 0.000265,
+        "max": 0.000638,
+        "qps": 5786.57
+      },
+      "faiss_hnsw_query_latency": {
+        "avg": 0.000206,
+        "p50": 0.000194,
+        "p95": 0.000292,
+        "max": 0.000404,
+        "qps": 4853.92
+      },
+      "recall_mean": 0.29,
+      "faiss_hnsw_recall_mean": 0.938,
+      "exact_vs_faiss_match_rate": 1.0
+    }
+  ]
+}

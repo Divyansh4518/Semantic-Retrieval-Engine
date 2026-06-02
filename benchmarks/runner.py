@@ -36,8 +36,17 @@ if str(_PROJECT_ROOT) not in sys.path:
 
 from src.index.exact import ExactIndex  # noqa: E402
 from src.index.faiss_flat import FaissFlatIndex  # noqa: E402
+from src.index.faiss_hnsw import FaissHNSWIndex  # noqa: E402
 from src.index.graph import GraphIndex  # noqa: E402
 from src.models import Document  # noqa: E402
+
+# ------------------------------------------------------------------
+# Fixed HNSW hyperparameters used in Sweeps A, C, D, H.
+# Sweeps B/C sweep M / ef_search independently.
+# ------------------------------------------------------------------
+_HNSW_M = 32
+_HNSW_EF_CONSTRUCTION = 200
+_HNSW_EF_SEARCH = 64
 
 from benchmarks.datasets import (  # noqa: E402
     generate_at_dimension,
@@ -182,6 +191,64 @@ def _build_flat_indices(
     return exact_idx, faiss_idx, exact_build, faiss_build
 
 
+def _build_all_indices_with_hnsw(
+    vectors: np.ndarray,
+    graph_M: int,
+    graph_ef_construction: int,
+    graph_ef_search: int,
+    hnsw_M: int = _HNSW_M,
+    hnsw_ef_construction: int = _HNSW_EF_CONSTRUCTION,
+    hnsw_ef_search: int = _HNSW_EF_SEARCH,
+) -> tuple[
+    GraphIndex, ExactIndex, FaissFlatIndex, FaissHNSWIndex,
+    float, float, float, float,
+]:
+    """Build all four indices: Graph, Exact, FaissFlat, FaissHNSW.
+
+    Returns
+    -------
+    tuple
+        ``(graph_idx, exact_idx, faiss_idx, hnsw_idx,
+           graph_build_s, exact_build_s, faiss_build_s, hnsw_build_s)``
+    """
+    documents = _vectors_to_documents(vectors)
+
+    exact_idx = ExactIndex()
+    t0 = time.perf_counter()
+    exact_idx.add_documents(documents)
+    exact_build = time.perf_counter() - t0
+
+    faiss_idx = FaissFlatIndex()
+    t0 = time.perf_counter()
+    faiss_idx.add_documents(documents)
+    faiss_build = time.perf_counter() - t0
+
+    hnsw_idx = FaissHNSWIndex(
+        M=hnsw_M,
+        ef_construction=hnsw_ef_construction,
+        ef_search=hnsw_ef_search,
+    )
+    t0 = time.perf_counter()
+    hnsw_idx.add_documents(documents)
+    hnsw_build = time.perf_counter() - t0
+
+    graph_idx = GraphIndex(
+        M=graph_M,
+        ef_construction=graph_ef_construction,
+        ef_search=graph_ef_search,
+    )
+    buf = io.StringIO()
+    t0 = time.perf_counter()
+    with contextlib.redirect_stdout(buf):
+        graph_idx.add_documents(documents)
+    graph_build = time.perf_counter() - t0
+
+    return (
+        graph_idx, exact_idx, faiss_idx, hnsw_idx,
+        graph_build, exact_build, faiss_build, hnsw_build,
+    )
+
+
 def _query_flat_index(
     index: ExactIndex | FaissFlatIndex,
     query_vectors: np.ndarray,
@@ -275,7 +342,12 @@ def _save_outputs(
 
 
 def sweep_a(seed: int = 42) -> None:
-    """Fix M=8, ef_search=64.  Sweep N over [100, 500, 1500, 5000]."""
+    """Fix M=8, ef_search=64.  Sweep N over [100, 500, 1500, 5000].
+
+    FaissHNSWIndex is built with fixed hyperparameters (_HNSW_M=32,
+    _HNSW_EF_CONSTRUCTION=200, _HNSW_EF_SEARCH=64) alongside the
+    existing GraphIndex / ExactIndex / FaissFlatIndex.
+    """
     print("\n" + "=" * 60)
     print("SWEEP A -- Scaling (N sweep)")
     print("=" * 60)
@@ -296,20 +368,28 @@ def sweep_a(seed: int = 42) -> None:
         graph_idx: GraphIndex | None = None
         exact_idx: ExactIndex | None = None
         faiss_idx: FaissFlatIndex | None = None
+        hnsw_idx: FaissHNSWIndex | None = None
         graph_build = 0.0
         exact_build = 0.0
         faiss_build = 0.0
+        hnsw_build = 0.0
 
         def _do_build() -> None:
-            nonlocal graph_idx, exact_idx, faiss_idx
-            nonlocal graph_build, exact_build, faiss_build
-            graph_idx, exact_idx, faiss_idx, graph_build, exact_build, faiss_build = (
-                _build_all_indices(vectors, M, ef_construction, ef_search)
-            )
+            nonlocal graph_idx, exact_idx, faiss_idx, hnsw_idx
+            nonlocal graph_build, exact_build, faiss_build, hnsw_build
+            (
+                graph_idx, exact_idx, faiss_idx, hnsw_idx,
+                graph_build, exact_build, faiss_build, hnsw_build,
+            ) = _build_all_indices_with_hnsw(vectors, M, ef_construction, ef_search)
 
         mem = measure_memory(_do_build)
 
-        assert graph_idx is not None and exact_idx is not None and faiss_idx is not None
+        assert (
+            graph_idx is not None
+            and exact_idx is not None
+            and faiss_idx is not None
+            and hnsw_idx is not None
+        )
 
         graph_health = analyze_graph(graph_idx)
         per_query, latencies, recalls = _run_queries(
@@ -317,28 +397,43 @@ def sweep_a(seed: int = 42) -> None:
         )
         percentiles = compute_query_percentiles(latencies)
 
-        # FAISS sequential queries
+        # FaissFlatIndex sequential queries
         faiss_results_list, faiss_latencies = _query_flat_index(
             faiss_idx, query_vectors, k=k
         )
         faiss_percentiles = compute_query_percentiles(faiss_latencies)
 
-        # Exact sequential queries (for timing comparison)
+        # ExactIndex sequential queries (timing comparison baseline)
         exact_results_list, exact_latencies = _query_flat_index(
             exact_idx, query_vectors, k=k
         )
         exact_percentiles = compute_query_percentiles(exact_latencies)
 
-        # Match rate: ExactIndex vs FaissFlatIndex
+        # FaissHNSWIndex sequential queries
+        hnsw_results_list, hnsw_latencies = _query_flat_index(
+            hnsw_idx, query_vectors, k=k
+        )
+        hnsw_percentiles = compute_query_percentiles(hnsw_latencies)
+
+        # Match rate: ExactIndex vs FaissFlatIndex (unchanged)
         match_rates = [
             compute_match_rate(er, fr)
             for er, fr in zip(exact_results_list, faiss_results_list)
         ]
         mean_match_rate = round(float(np.mean(match_rates)), 4)
 
+        # HNSW recall: compare against FaissFlatIndex ground truth
+        hnsw_recalls = [
+            compute_recall(hnsw_results_list[qi], faiss_results_list[qi], k)
+            for qi in range(n_queries)
+        ]
+        hnsw_recall_mean = round(float(np.mean(hnsw_recalls)), 4)
+
         meta = _metadata(
             seed, M=M, ef_construction=ef_construction,
             ef_search=ef_search, N=N, dim=dim,
+            hnsw_M=_HNSW_M, hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+            hnsw_ef_search=_HNSW_EF_SEARCH,
         )
 
         for entry in per_query:
@@ -349,34 +444,46 @@ def sweep_a(seed: int = 42) -> None:
         point = {
             **meta,
             "N": N,
+            # --- build times ---
             "graph_build_time_s": round(graph_build, 4),
             "exact_build_time_s": round(exact_build, 4),
             "faiss_build_time_s": round(faiss_build, 4),
-            "build_time_s": round(graph_build, 4),
+            "faiss_hnsw_build_time_s": round(hnsw_build, 4),
+            "build_time_s": round(graph_build, 4),   # back-compat alias
+            # --- memory (whole build closure) ---
             "memory": mem,
+            # --- graph topology ---
             "graph_health": graph_health,
+            # --- query latencies ---
             "query_latency": percentiles,
             "exact_query_latency": exact_percentiles,
             "faiss_query_latency": faiss_percentiles,
+            "faiss_hnsw_query_latency": hnsw_percentiles,
+            # --- recall / match ---
             "recall_mean": round(float(np.mean(recalls)), 4),
+            "faiss_hnsw_recall_mean": hnsw_recall_mean,
             "exact_vs_faiss_match_rate": mean_match_rate,
         }
         sweep_results.append(point)
         print(
             f"    Graph Build: {graph_build:.3f}s | "
             f"Exact Build: {exact_build:.4f}s | "
-            f"FAISS Build: {faiss_build:.4f}s"
+            f"FAISS Build: {faiss_build:.4f}s | "
+            f"HNSW Build: {hnsw_build:.4f}s"
         )
         print(
             f"    Graph Recall: {np.mean(recalls):.4f} | "
+            f"HNSW Recall: {hnsw_recall_mean:.4f} | "
             f"Match Rate: {mean_match_rate:.4f} | "
-            f"FAISS QPS: {faiss_percentiles['qps']:.0f}"
+            f"HNSW QPS: {hnsw_percentiles['qps']:.0f}"
         )
 
     summary = {
         **_metadata(
             seed, M=M, ef_construction=ef_construction,
             ef_search=ef_search, dim=dim,
+            hnsw_M=_HNSW_M, hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+            hnsw_ef_search=_HNSW_EF_SEARCH,
         ),
         "sweep": "A",
         "variable": "N",
@@ -391,12 +498,19 @@ def sweep_a(seed: int = 42) -> None:
 
 
 def sweep_b(seed: int = 42) -> None:
-    """Fix N=5000, ef_search=64.  Sweep M over [2, 4, 8, 16, 32]."""
+    """Fix N=5000, ef_search=64.  Sweep M over [2, 4, 8, 16, 32].
+
+    Both GraphIndex and FaissHNSWIndex use the swept M value so the
+    effect of graph connectivity is directly comparable across
+    implementations.  ef_construction=200 and ef_search=64 are fixed
+    for HNSW; ef_construction=32 is kept for GraphIndex.
+    """
     print("\n" + "=" * 60)
     print("SWEEP B -- Topology (M sweep)")
     print("=" * 60)
 
     N, ef_construction, ef_search, dim = 5000, 32, 64, 128
+    hnsw_ef_construction = 200
     m_values = [2, 4, 8, 16, 32]
     n_queries = 100
     k = 10
@@ -409,18 +523,42 @@ def sweep_b(seed: int = 42) -> None:
 
     for M in m_values:
         print(f"\n  M={M} ...")
-        graph_idx, exact_idx, build_time = _build_indices(
+
+        # --- GraphIndex ---
+        graph_idx, exact_idx, graph_build = _build_indices(
             vectors, M, ef_construction, ef_search
         )
         graph_health = analyze_graph(graph_idx)
         per_query, latencies, recalls = _run_queries(
             graph_idx, exact_idx, query_vectors, k=k
         )
-        percentiles = compute_query_percentiles(latencies)
+        graph_percentiles = compute_query_percentiles(latencies)
+
+        # --- FaissHNSWIndex (same M, fixed ef params) ---
+        documents = _vectors_to_documents(vectors)
+        hnsw_idx = FaissHNSWIndex(
+            M=M,
+            ef_construction=hnsw_ef_construction,
+            ef_search=ef_search,
+        )
+        t0 = time.perf_counter()
+        hnsw_idx.add_documents(documents)
+        hnsw_build = time.perf_counter() - t0
+
+        # Ground truth for HNSW recall
+        flat_results_list, _ = _query_flat_index(exact_idx, query_vectors, k=k)
+        hnsw_results_list, hnsw_latencies = _query_flat_index(hnsw_idx, query_vectors, k=k)
+        hnsw_percentiles = compute_query_percentiles(hnsw_latencies)
+        hnsw_recalls = [
+            compute_recall(hnsw_results_list[qi], flat_results_list[qi], k)
+            for qi in range(n_queries)
+        ]
+        hnsw_recall_mean = round(float(np.mean(hnsw_recalls)), 4)
 
         meta = _metadata(
             seed, M=M, ef_construction=ef_construction,
             ef_search=ef_search, N=N, dim=dim,
+            hnsw_ef_construction=hnsw_ef_construction,
         )
 
         for entry in per_query:
@@ -431,22 +569,31 @@ def sweep_b(seed: int = 42) -> None:
         point = {
             **meta,
             "M": M,
-            "build_time_s": round(build_time, 4),
+            "build_time_s": round(graph_build, 4),
+            "faiss_hnsw_build_time_s": round(hnsw_build, 4),
             "graph_health": graph_health,
-            "query_latency": percentiles,
+            "query_latency": graph_percentiles,
+            "faiss_hnsw_query_latency": hnsw_percentiles,
             "recall_mean": round(float(np.mean(recalls)), 4),
+            "faiss_hnsw_recall_mean": hnsw_recall_mean,
         }
         sweep_results.append(point)
         print(
-            f"    Components: {graph_health['num_components']} | "
-            f"Asymmetric: {graph_health['asymmetric_edge_count']} | "
-            f"Recall: {np.mean(recalls):.4f}"
+            f"    Graph  -> Recall: {np.mean(recalls):.4f} | "
+            f"Build: {graph_build:.3f}s | "
+            f"p50: {graph_percentiles['p50']*1000:.3f}ms"
+        )
+        print(
+            f"    HNSW   -> Recall: {hnsw_recall_mean:.4f} | "
+            f"Build: {hnsw_build:.3f}s | "
+            f"p50: {hnsw_percentiles['p50']*1000:.3f}ms"
         )
 
     summary = {
         **_metadata(
             seed, N=N, ef_construction=ef_construction,
             ef_search=ef_search, dim=dim,
+            hnsw_ef_construction=hnsw_ef_construction,
         ),
         "sweep": "B",
         "variable": "M",
@@ -461,7 +608,15 @@ def sweep_b(seed: int = 42) -> None:
 
 
 def sweep_c(seed: int = 42) -> None:
-    """Fix N=5000, M=8.  Sweep ef_search over [8..512]."""
+    """Fix N=5000, M=8.  Sweep ef_search over [8..512].
+
+    Optimization: both GraphIndex and FaissHNSWIndex are built *once*
+    at the maximum ef_search.  Each iteration mutates the search
+    parameter in-place:
+        * ``graph_idx.ef_search = ef_search``
+        * ``hnsw_idx.set_ef_search(ef_search)``
+    This avoids redundant O(N) graph construction per ef_search value.
+    """
     print("\n" + "=" * 60)
     print("SWEEP C -- Traversal (ef_search sweep)")
     print("=" * 60)
@@ -473,27 +628,55 @@ def sweep_c(seed: int = 42) -> None:
 
     vectors = generate_uniform(N, dim, seed=seed)
     query_vectors = generate_uniform(n_queries, dim, seed=seed + 1)
+    documents = _vectors_to_documents(vectors)
 
-    # Build once — ef_search only affects queries, not construction.
-    graph_idx, exact_idx, build_time = _build_indices(
+    # --- Build both indices once at max ef_search ---
+    graph_idx, exact_idx, graph_build = _build_indices(
         vectors, M, ef_construction, max(ef_values)
     )
+
+    hnsw_idx = FaissHNSWIndex(
+        M=_HNSW_M,
+        ef_construction=_HNSW_EF_CONSTRUCTION,
+        ef_search=max(ef_values),
+    )
+    t0 = time.perf_counter()
+    hnsw_idx.add_documents(documents)
+    hnsw_build = time.perf_counter() - t0
+    print(f"  Graph build: {graph_build:.3f}s | HNSW build: {hnsw_build:.3f}s")
+
+    # Exact ground truth (used for HNSW recall computation)
+    exact_results_list, _ = _query_flat_index(exact_idx, query_vectors, k=k)
 
     all_raw: list[dict] = []
     sweep_results: list[dict] = []
 
     for ef_search in ef_values:
         print(f"\n  ef_search={ef_search} ...")
-        graph_idx.ef_search = ef_search
 
-        per_query, latencies, recalls = _run_queries(
+        # Mutate search parameters in-place
+        graph_idx.ef_search = ef_search
+        hnsw_idx.set_ef_search(ef_search)
+
+        # Graph queries
+        per_query, graph_latencies, graph_recalls = _run_queries(
             graph_idx, exact_idx, query_vectors, k=k
         )
-        percentiles = compute_query_percentiles(latencies)
+        graph_percentiles = compute_query_percentiles(graph_latencies)
+
+        # HNSW queries
+        hnsw_results_list, hnsw_latencies = _query_flat_index(hnsw_idx, query_vectors, k=k)
+        hnsw_percentiles = compute_query_percentiles(hnsw_latencies)
+        hnsw_recalls = [
+            compute_recall(hnsw_results_list[qi], exact_results_list[qi], k)
+            for qi in range(n_queries)
+        ]
+        hnsw_recall_mean = round(float(np.mean(hnsw_recalls)), 4)
 
         meta = _metadata(
             seed, M=M, ef_construction=ef_construction,
             ef_search=ef_search, N=N, dim=dim,
+            hnsw_M=_HNSW_M, hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
         )
 
         for entry in per_query:
@@ -504,18 +687,28 @@ def sweep_c(seed: int = 42) -> None:
         point = {
             **meta,
             "ef_search": ef_search,
-            "build_time_s": round(build_time, 4),
-            "query_latency": percentiles,
-            "recall_mean": round(float(np.mean(recalls)), 4),
+            "build_time_s": round(graph_build, 4),
+            "faiss_hnsw_build_time_s": round(hnsw_build, 4),
+            "query_latency": graph_percentiles,
+            "faiss_hnsw_query_latency": hnsw_percentiles,
+            "recall_mean": round(float(np.mean(graph_recalls)), 4),
+            "faiss_hnsw_recall_mean": hnsw_recall_mean,
         }
         sweep_results.append(point)
         print(
-            f"    Recall: {np.mean(recalls):.4f} | "
-            f"p95: {percentiles['p95'] * 1000:.1f}ms"
+            f"    Graph  -> Recall: {np.mean(graph_recalls):.4f} | "
+            f"p50: {graph_percentiles['p50']*1000:.3f}ms"
+        )
+        print(
+            f"    HNSW   -> Recall: {hnsw_recall_mean:.4f} | "
+            f"p50: {hnsw_percentiles['p50']*1000:.3f}ms"
         )
 
     summary = {
-        **_metadata(seed, M=M, ef_construction=ef_construction, N=N, dim=dim),
+        **_metadata(
+            seed, M=M, ef_construction=ef_construction, N=N, dim=dim,
+            hnsw_M=_HNSW_M, hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+        ),
         "sweep": "C",
         "variable": "ef_search",
         "results": sweep_results,
@@ -529,7 +722,13 @@ def sweep_c(seed: int = 42) -> None:
 
 
 def sweep_d(seed: int = 42) -> None:
-    """5000 vectors, 10 clusters.  10x10 escape-success matrix."""
+    """5000 vectors, 10 clusters.  Two 10x10 escape-success matrices.
+
+    Runs the cross-cluster escape logic for both GraphIndex and
+    FaissHNSWIndex, producing:
+        * ``graph_escape_matrix``      (10x10)
+        * ``faiss_hnsw_escape_matrix`` (10x10)
+    """
     print("\n" + "=" * 60)
     print("SWEEP D -- Escape Success Matrix")
     print("=" * 60)
@@ -542,17 +741,32 @@ def sweep_d(seed: int = 42) -> None:
     vectors, assignments = generate_clustered(
         N, dim, n_clusters=n_clusters, seed=seed
     )
+    documents = _vectors_to_documents(vectors)
 
-    graph_idx, exact_idx, build_time = _build_indices(
+    # --- Build Graph index ---
+    graph_idx, exact_idx, graph_build = _build_indices(
         vectors, M, ef_construction, ef_search
     )
+
+    # --- Build HNSW index (same corpus) ---
+    hnsw_idx = FaissHNSWIndex(
+        M=_HNSW_M,
+        ef_construction=_HNSW_EF_CONSTRUCTION,
+        ef_search=_HNSW_EF_SEARCH,
+    )
+    t0 = time.perf_counter()
+    hnsw_idx.add_documents(documents)
+    hnsw_build = time.perf_counter() - t0
+
+    print(f"  Graph build: {graph_build:.3f}s | HNSW build: {hnsw_build:.3f}s")
 
     # Group document indices by cluster
     cluster_indices: dict[int, list[int]] = {}
     for i, c in enumerate(assignments):
         cluster_indices.setdefault(int(c), []).append(i)
 
-    escape_matrix = np.zeros((n_clusters, n_clusters), dtype=float)
+    graph_escape_matrix = np.zeros((n_clusters, n_clusters), dtype=float)
+    hnsw_escape_matrix  = np.zeros((n_clusters, n_clusters), dtype=float)
     all_raw: list[dict] = []
 
     rng = np.random.default_rng(seed + 100)
@@ -567,47 +781,64 @@ def sweep_d(seed: int = 42) -> None:
 
         for tgt_cluster in range(n_clusters):
             tgt_set = set(cluster_indices.get(tgt_cluster, []))
-            successes = 0
+            graph_successes = 0
+            hnsw_successes  = 0
 
             for src_idx in sampled:
                 query_vec = vectors[src_idx]
-                diag = capture_search_diagnostics(graph_idx, query_vec, k=k)
-                results = diag["results"]
 
-                result_indices = [
-                    int(doc.id.split("-")[1]) for doc, _ in results
+                # --- Graph escape ---
+                diag = capture_search_diagnostics(graph_idx, query_vec, k=k)
+                graph_result_indices = [
+                    int(doc.id.split("-")[1]) for doc, _ in diag["results"]
                 ]
-                escaped = any(idx in tgt_set for idx in result_indices)
-                if escaped:
-                    successes += 1
+                graph_escaped = any(idx in tgt_set for idx in graph_result_indices)
+                if graph_escaped:
+                    graph_successes += 1
+
+                # --- HNSW escape ---
+                hnsw_results = hnsw_idx.search(query_vec, k=k)
+                hnsw_result_indices = [
+                    int(doc.id.split("-")[1]) for doc, _ in hnsw_results
+                ]
+                hnsw_escaped = any(idx in tgt_set for idx in hnsw_result_indices)
+                if hnsw_escaped:
+                    hnsw_successes += 1
 
                 all_raw.append(
                     {
                         "source_cluster": src_cluster,
                         "target_cluster": tgt_cluster,
                         "query_doc_index": int(src_idx),
-                        "escaped": escaped,
-                        "result_indices": result_indices,
+                        "graph_escaped": graph_escaped,
+                        "hnsw_escaped": hnsw_escaped,
+                        "graph_result_indices": graph_result_indices,
+                        "hnsw_result_indices": hnsw_result_indices,
                     }
                 )
 
-            escape_matrix[src_cluster, tgt_cluster] = (
-                successes / sample_count if sample_count > 0 else 0.0
-            )
+            rate = lambda s: s / sample_count if sample_count > 0 else 0.0
+            graph_escape_matrix[src_cluster, tgt_cluster] = rate(graph_successes)
+            hnsw_escape_matrix[src_cluster, tgt_cluster]  = rate(hnsw_successes)
 
-    # Pretty-print the matrix
-    print("\n  Escape Success Matrix (rows=source, cols=target):")
-    header = "       " + "  ".join(f"C{c:02d}" for c in range(n_clusters))
-    print(header)
-    for src in range(n_clusters):
-        row = f"  C{src:02d}  " + "  ".join(
-            f"{escape_matrix[src, tgt]:.2f}" for tgt in range(n_clusters)
-        )
-        print(row)
+    def _print_matrix(label: str, mat: np.ndarray) -> None:
+        print(f"\n  {label} (rows=source, cols=target):")
+        header = "       " + "  ".join(f"C{c:02d}" for c in range(n_clusters))
+        print(header)
+        for src in range(n_clusters):
+            row = f"  C{src:02d}  " + "  ".join(
+                f"{mat[src, tgt]:.2f}" for tgt in range(n_clusters)
+            )
+            print(row)
+
+    _print_matrix("Graph Escape Matrix", graph_escape_matrix)
+    _print_matrix("HNSW  Escape Matrix", hnsw_escape_matrix)
 
     meta = _metadata(
         seed, M=M, ef_construction=ef_construction,
         ef_search=ef_search, N=N, dim=dim,
+        hnsw_M=_HNSW_M, hnsw_ef_construction=_HNSW_EF_CONSTRUCTION,
+        hnsw_ef_search=_HNSW_EF_SEARCH,
     )
     summary = {
         **meta,
@@ -616,8 +847,14 @@ def sweep_d(seed: int = 42) -> None:
         "n_clusters": n_clusters,
         "queries_per_source": queries_per_source,
         "k": k,
-        "build_time_s": round(build_time, 4),
-        "escape_matrix": escape_matrix.tolist(),
+        "graph_build_time_s": round(graph_build, 4),
+        "faiss_hnsw_build_time_s": round(hnsw_build, 4),
+        # Legacy alias kept for backward compatibility
+        "build_time_s": round(graph_build, 4),
+        "graph_escape_matrix": graph_escape_matrix.tolist(),
+        "faiss_hnsw_escape_matrix": hnsw_escape_matrix.tolist(),
+        # Legacy alias — same as graph_escape_matrix
+        "escape_matrix": graph_escape_matrix.tolist(),
     }
     _save_outputs("sweep_d", all_raw, summary)
 

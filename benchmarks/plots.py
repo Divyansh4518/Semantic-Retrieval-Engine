@@ -38,6 +38,7 @@ _COLORS = {
     "accent": "#43E8D8",
     "warn": "#FFD93D",
     "muted": "#8B8B9E",
+    "hnsw": "#00C896",    # teal-green — reserved for FaissHNSWIndex series
 }
 
 
@@ -91,7 +92,7 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def plot_recall_vs_ef_search() -> None:
-    """Line chart — Recall vs ``ef_search``."""
+    """Dual-series line chart -- Recall@10 vs ef_search for Graph and HNSW (Sweep C)."""
     path = _find_latest("sweep_c")
     if not path:
         print("  [SKIP] No sweep_c data found, skipping recall_vs_ef_search")
@@ -100,21 +101,38 @@ def plot_recall_vs_ef_search() -> None:
     data = _load_json(path)
     results = data["results"]
 
-    ef_values = [r["ef_search"] for r in results]
-    recalls = [r["recall_mean"] for r in results]
+    ef_values    = [r["ef_search"] for r in results]
+    graph_recalls = [r["recall_mean"] for r in results]
+    hnsw_recalls  = [
+        r["faiss_hnsw_recall_mean"]
+        if "faiss_hnsw_recall_mean" in r else None
+        for r in results
+    ]
 
     _apply_style()
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
+
     ax.plot(
-        ef_values, recalls,
+        ef_values, graph_recalls,
         marker="o", color=_COLORS["primary"],
-        linewidth=2, markersize=7, zorder=3,
+        linewidth=2, markersize=7, label="GraphIndex", zorder=3,
     )
-    ax.fill_between(ef_values, recalls, alpha=0.15, color=_COLORS["primary"])
+    ax.fill_between(ef_values, graph_recalls, alpha=0.10, color=_COLORS["primary"])
+
+    if any(v is not None for v in hnsw_recalls):
+        hnsw_vals = [v if v is not None else float("nan") for v in hnsw_recalls]
+        ax.plot(
+            ef_values, hnsw_vals,
+            marker="D", color=_COLORS["hnsw"],
+            linewidth=2, markersize=7, label="FaissHNSWIndex", zorder=3,
+        )
+        ax.fill_between(ef_values, hnsw_vals, alpha=0.10, color=_COLORS["hnsw"])
+
     ax.set_xlabel("ef_search")
     ax.set_ylabel("Recall@10")
-    ax.set_title("Recall vs. ef_search (Sweep C)")
+    ax.set_title("Recall@10 vs. ef_search -- Graph vs HNSW (Sweep C)")
     ax.set_xscale("log", base=2)
+    ax.legend(framealpha=0.3)
     ax.grid(True, linestyle="--", alpha=0.4)
     ax.set_ylim(0, 1.05)
     fig.tight_layout()
@@ -131,7 +149,7 @@ def plot_recall_vs_ef_search() -> None:
 
 
 def plot_recall_vs_M() -> None:
-    """Line chart — Recall vs ``M``."""
+    """Dual-series line chart -- Recall@10 vs M for Graph and HNSW (Sweep B)."""
     path = _find_latest("sweep_b")
     if not path:
         print("  [SKIP] No sweep_b data found, skipping recall_vs_M")
@@ -140,20 +158,37 @@ def plot_recall_vs_M() -> None:
     data = _load_json(path)
     results = data["results"]
 
-    m_values = [r["M"] for r in results]
-    recalls = [r["recall_mean"] for r in results]
+    m_values     = [r["M"] for r in results]
+    graph_recalls = [r["recall_mean"] for r in results]
+    hnsw_recalls  = [
+        r["faiss_hnsw_recall_mean"]
+        if "faiss_hnsw_recall_mean" in r else None
+        for r in results
+    ]
 
     _apply_style()
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
+
     ax.plot(
-        m_values, recalls,
+        m_values, graph_recalls,
         marker="s", color=_COLORS["secondary"],
-        linewidth=2, markersize=7, zorder=3,
+        linewidth=2, markersize=7, label="GraphIndex", zorder=3,
     )
-    ax.fill_between(m_values, recalls, alpha=0.15, color=_COLORS["secondary"])
+    ax.fill_between(m_values, graph_recalls, alpha=0.10, color=_COLORS["secondary"])
+
+    if any(v is not None for v in hnsw_recalls):
+        hnsw_vals = [v if v is not None else float("nan") for v in hnsw_recalls]
+        ax.plot(
+            m_values, hnsw_vals,
+            marker="D", color=_COLORS["hnsw"],
+            linewidth=2, markersize=7, label="FaissHNSWIndex", zorder=3,
+        )
+        ax.fill_between(m_values, hnsw_vals, alpha=0.10, color=_COLORS["hnsw"])
+
     ax.set_xlabel("M (max neighbors per node)")
     ax.set_ylabel("Recall@10")
-    ax.set_title("Recall vs. M (Sweep B)")
+    ax.set_title("Recall@10 vs. M -- Graph vs HNSW (Sweep B)")
+    ax.legend(framealpha=0.3)
     ax.grid(True, linestyle="--", alpha=0.4)
     ax.set_ylim(0, 1.05)
     fig.tight_layout()
@@ -170,7 +205,7 @@ def plot_recall_vs_M() -> None:
 
 
 def plot_build_time_vs_N() -> None:
-    """Log-scale line chart -- Build Time vs N for all 3 engines."""
+    """Log-scale line chart -- Build Time vs N for Graph, Exact, Flat, and HNSW."""
     path = _find_latest("sweep_a")
     if not path:
         print("  [SKIP] No sweep_a data found, skipping build_time_vs_N")
@@ -183,6 +218,7 @@ def plot_build_time_vs_N() -> None:
     graph_times = [r.get("graph_build_time_s", r.get("build_time_s")) for r in results]
     exact_times = [r.get("exact_build_time_s", 0) for r in results]
     faiss_times = [r.get("faiss_build_time_s", 0) for r in results]
+    hnsw_times  = [r.get("faiss_hnsw_build_time_s", 0) for r in results]
 
     _apply_style()
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -202,6 +238,12 @@ def plot_build_time_vs_N() -> None:
             n_values, faiss_times,
             marker="s", color=_COLORS["secondary"],
             linewidth=2, markersize=7, label="FaissFlatIndex", zorder=3,
+        )
+    if any(t > 0 for t in hnsw_times):
+        ax.plot(
+            n_values, hnsw_times,
+            marker="D", color=_COLORS["hnsw"],
+            linewidth=2, markersize=7, label="FaissHNSWIndex", zorder=3,
         )
     ax.set_xlabel("Dataset Size (N)")
     ax.set_ylabel("Build Time (seconds)")
@@ -223,7 +265,16 @@ def plot_build_time_vs_N() -> None:
 
 
 def plot_query_latency_vs_N() -> None:
-    """Line chart — Query Latency (p50 & p95) vs dataset size ``N``."""
+    """Line chart -- p50 query latency per engine vs dataset size N (Sweep A).
+
+    Plots three series side-by-side:
+        * GraphIndex p50  (primary)
+        * FaissFlatIndex p50  (secondary)
+        * FaissHNSWIndex p50  (hnsw)
+
+    Older sweep_a files that pre-date HNSW integration will simply omit
+    the HNSW series rather than crashing.
+    """
     path = _find_latest("sweep_a")
     if not path:
         print("  [SKIP] No sweep_a data found, skipping query_latency_vs_N")
@@ -232,26 +283,47 @@ def plot_query_latency_vs_N() -> None:
     data = _load_json(path)
     results = data["results"]
 
-    n_values = [r["N"] for r in results]
-    p50 = [r["query_latency"]["p50"] * 1000 for r in results]
-    p95 = [r["query_latency"]["p95"] * 1000 for r in results]
+    n_values  = [r["N"] for r in results]
+    graph_p50 = [r["query_latency"]["p50"] * 1000 for r in results]
+    flat_p50  = [
+        r["faiss_query_latency"]["p50"] * 1000
+        if "faiss_query_latency" in r else None
+        for r in results
+    ]
+    hnsw_p50  = [
+        r["faiss_hnsw_query_latency"]["p50"] * 1000
+        if "faiss_hnsw_query_latency" in r else None
+        for r in results
+    ]
 
     _apply_style()
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5))
+
     ax.plot(
-        n_values, p50,
-        marker="o", color=_COLORS["primary"],
-        linewidth=2, markersize=7, label="p50", zorder=3,
+        n_values, graph_p50,
+        marker="^", color=_COLORS["accent"],
+        linewidth=2, markersize=7, label="GraphIndex p50", zorder=3,
     )
-    ax.plot(
-        n_values, p95,
-        marker="s", color=_COLORS["secondary"],
-        linewidth=2, markersize=7, label="p95", zorder=3,
-    )
-    ax.fill_between(n_values, p50, p95, alpha=0.1, color=_COLORS["muted"])
+
+    if any(v is not None for v in flat_p50):
+        flat_vals = [v if v is not None else float("nan") for v in flat_p50]
+        ax.plot(
+            n_values, flat_vals,
+            marker="s", color=_COLORS["secondary"],
+            linewidth=2, markersize=7, label="FaissFlatIndex p50", zorder=3,
+        )
+
+    if any(v is not None for v in hnsw_p50):
+        hnsw_vals = [v if v is not None else float("nan") for v in hnsw_p50]
+        ax.plot(
+            n_values, hnsw_vals,
+            marker="D", color=_COLORS["hnsw"],
+            linewidth=2, markersize=7, label="FaissHNSWIndex p50", zorder=3,
+        )
+
     ax.set_xlabel("Dataset Size (N)")
-    ax.set_ylabel("Query Latency (ms)")
-    ax.set_title("Query Latency vs. Dataset Size (Sweep A)")
+    ax.set_ylabel("p50 Query Latency (ms)")
+    ax.set_title("p50 Query Latency vs. Dataset Size — Graph vs Flat vs HNSW (Sweep A)")
     ax.legend(framealpha=0.3)
     ax.grid(True, linestyle="--", alpha=0.4)
     fig.tight_layout()
