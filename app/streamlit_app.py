@@ -273,7 +273,7 @@ def _build_pipeline(
         index=index,
         embedding_service=_get_embedding_service(),
         llm=llm,
-        top_k=5,
+        top_k=10,
     )
 
 

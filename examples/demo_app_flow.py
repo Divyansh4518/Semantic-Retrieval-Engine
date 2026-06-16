@@ -1,19 +1,22 @@
 """
 examples/demo_app_flow.py
 --------------------------
-End-to-end integration demo for the RAG platform (Phase 4 — High-Fidelity Ingestion).
+End-to-end integration demo for the RAG platform (Phase 5 — Smart Routing Ingestion).
 
 This script demonstrates the complete upgraded pipeline:
   1. Scans the repository using RepositoryLoader (Markdown + text files).
   2. Scans benchmark JSON/JSONL files and converts them to semantic English
      prose via json_renderer.render_benchmark_to_prose() BEFORE chunking.
-  3. Passes all combined payloads into the upgraded RecursiveTokenChunker
-     (langchain MarkdownHeaderTextSplitter for .md, RecursiveCharacterTextSplitter
-     for prose).
+  3. Passes all combined payloads into the SmartRepositoryChunker which
+     routes each file to a specialised strategy based on extension:
+       - .json/.jsonl → single atomic chunk
+       - .md → header-aware splitting
+       - .py → AST/function-based splitting
+       - .txt/other → paragraph-based fallback
   4. Generates deterministic embeddings via MockEmbeddingService (dim=128).
-  5. Builds and persists a FaissHNSWIndex to data/index/.
+  5. Purges data/index/ and rebuilds a FaissHNSWIndex.
   6. Runs a RAGPipeline query: "What was the crossover point discovered in Sweep H?"
-  7. Prints four structured telemetry blocks.
+  7. Prints four structured telemetry blocks + per-extension chunk summary.
   8. Runs an inline validation sweep confirming prose quality.
 
 Run with:
@@ -24,8 +27,10 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 import textwrap
+from collections import Counter
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -39,7 +44,7 @@ from src.index.faiss_hnsw import FaissHNSWIndex
 from src.index.persistence import save_index_to_disk
 from src.ingestion import (
     MockEmbeddingService,
-    RecursiveTokenChunker,
+    SmartRepositoryChunker,
     RepositoryLoader,
     render_benchmark_file,
     render_benchmark_to_prose,
@@ -87,7 +92,8 @@ def _block(label: str, content: str, indent: int = 4) -> None:
     )
     for line in content.strip().splitlines():
         if line.strip():
-            print(wrapper.fill(line))
+            safe_line = line.encode("ascii", errors="replace").decode("ascii")
+            print(wrapper.fill(safe_line))
         else:
             print()
 
@@ -151,21 +157,49 @@ def collect_payloads(project_root: Path) -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Step 2: Chunk — upgraded langchain-backed RecursiveTokenChunker
+# Step 2: Chunk — SmartRepositoryChunker with file-type-aware routing
 # ---------------------------------------------------------------------------
 
 def chunk_payloads(payloads: dict[str, str]):
     """
-    Run the upgraded hybrid chunker over all payloads.
+    Run the SmartRepositoryChunker over all payloads.
 
-    Markdown files are routed through MarkdownHeaderTextSplitter (header-
-    aware) then RecursiveCharacterTextSplitter (600 char, 50 overlap).
-    Prose/JSON files are routed through RecursiveCharacterTextSplitter
-    (800 char, 80 overlap) which honours sentence boundaries.
+    Each file is routed to its optimal strategy:
+      - .json/.jsonl → whole-document (1 chunk each)
+      - .md → header-aware → character guard
+      - .py → AST/function-based
+      - .txt/other → paragraph fallback
     """
-    chunker = RecursiveTokenChunker(chunk_size=800, overlap=80)
+    chunker = SmartRepositoryChunker()
     chunks = chunker.chunk_all(payloads)
     print(f"  Produced {len(chunks)} chunks from {len(payloads)} source(s).")
+
+    # ── Per-extension summary ──
+    ext_file_count: Counter = Counter()
+    ext_chunk_count: Counter = Counter()
+    for source_file in payloads:
+        ext = Path(source_file).suffix.lower() or "(no ext)"
+        ext_file_count[ext] += 1
+    for chunk in chunks:
+        ext = Path(chunk.source_file).suffix.lower() or "(no ext)"
+        ext_chunk_count[ext] += 1
+
+    print("\n  Per-Extension Routing Summary:")
+    print(f"  {'Extension':<12} {'Files':>6} {'Chunks':>8}  Route")
+    print(f"  {'-' * 12} {'-' * 6} {'-' * 8}  {'-' * 22}")
+    route_labels = {
+        ".json": "json_whole_document",
+        ".jsonl": "json_whole_document",
+        ".md": "markdown_header",
+        ".py": "python_ast",
+        ".txt": "fallback_paragraph",
+    }
+    for ext in sorted(set(ext_file_count) | set(ext_chunk_count)):
+        files = ext_file_count.get(ext, 0)
+        ccount = ext_chunk_count.get(ext, 0)
+        route = route_labels.get(ext, "fallback_paragraph")
+        print(f"  {ext:<12} {files:>6} {ccount:>8}  {route}")
+    print()
     return chunks
 
 
@@ -196,10 +230,14 @@ def build_index(documents) -> FaissHNSWIndex:
 
 
 # ---------------------------------------------------------------------------
-# Step 5: Persist
+# Step 5: Purge old index & Persist
 # ---------------------------------------------------------------------------
 
 def persist_index(index: FaissHNSWIndex) -> None:
+    # Purge stale index before rebuilding
+    if os.path.exists(INDEX_DIR):
+        shutil.rmtree(INDEX_DIR)
+        print(f"  Purged old index at '{INDEX_DIR}'.")
     os.makedirs(INDEX_DIR, exist_ok=True)
     save_index_to_disk(index, directory=INDEX_DIR)
     print(f"  Index serialized to '{INDEX_DIR}'.")
@@ -305,7 +343,7 @@ def validate_prose_quality(payloads: dict[str, str]) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    _banner("RAG PLATFORM — High-Fidelity Ingestion Demo (Phase 4)")
+    _banner("RAG PLATFORM — Smart Routing Ingestion Demo (Phase 5)")
     print(f"\n  Project root: {_PROJECT_ROOT}")
     print(f"  Target query: \"{TARGET_QUERY}\"")
 
@@ -323,7 +361,7 @@ def main() -> None:
     validate_prose_quality(payloads)
 
     # ── Step 2: Chunk ──
-    _banner("Step 2: Chunking (langchain MarkdownHeaderTextSplitter + RecursiveCharacterTextSplitter)")
+    _banner("Step 2: Chunking (SmartRepositoryChunker — file-type-aware routing)")
     chunks = chunk_payloads(payloads)
 
     if not chunks:
@@ -416,7 +454,7 @@ def main() -> None:
     )
     _block("4  RESULT", result_text)
 
-    _banner("DEMO COMPLETE -- Phase 4 high-fidelity ingestion pipeline verified.")
+    _banner("DEMO COMPLETE -- Phase 5 smart routing ingestion pipeline verified.")
     print()
 
 
