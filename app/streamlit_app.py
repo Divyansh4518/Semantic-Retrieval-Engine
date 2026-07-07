@@ -52,7 +52,7 @@ from src.index.persistence import load_index_from_disk, save_index_to_disk
 from src.ingestion import (
     MockEmbeddingService,
     MiniLMEmbeddingService,
-    RecursiveTokenChunker,
+    SmartRepositoryChunker,
     render_benchmark_to_prose,
 )
 from src.llm.config import GenerationConfig
@@ -343,21 +343,29 @@ def _ingest_and_build_index(uploaded_files) -> tuple[FaissHNSWIndex, int, int]:
     """
     Run the full ingestion pipeline on uploaded files and build a new index.
 
+    Uses the same ``SmartRepositoryChunker`` / ``chunk_all()`` path as
+    ``demo_app_flow.py``, ensuring file-type-aware routing (Markdown header
+    splitting, Python AST splitting, JSON whole-document, paragraph fallback)
+    is applied consistently regardless of whether the user is running the
+    Streamlit UI or the CLI demo.
+
     The FAISS index dimension is automatically matched to the active
     embedding provider (384-d for MiniLM, 128-d for Mock).
 
     Returns (index, document_count, chunk_count).
     """
     embed_svc = _get_embedding_service()
-    chunker = RecursiveTokenChunker(chunk_size=800, overlap=80)
-    all_chunks = []
-    doc_count = 0
+    chunker = SmartRepositoryChunker()
 
+    # Build a {source_file: text} payload dict — mirrors demo_app_flow.collect_payloads()
+    payloads: dict[str, str] = {}
     for uploaded_file in uploaded_files:
         text = _read_uploaded_file_text(uploaded_file)
-        file_chunks = chunker.chunk_document(text, source_file=uploaded_file.name)
-        all_chunks.extend(file_chunks)
-        doc_count += 1
+        payloads[uploaded_file.name] = text
+
+    # Single canonical chunk_all() call — identical to the demo pipeline
+    all_chunks = chunker.chunk_all(payloads)
+    doc_count = len(payloads)
 
     documents = embed_svc.embed_chunks(all_chunks)
 
