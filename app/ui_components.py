@@ -311,10 +311,10 @@ def render_sidebar(models_dict: dict[str, str] = MODELS) -> dict[str, Any]:
         st.markdown("#### 📄 Document Management")
         uploaded_files = st.file_uploader(
             "Upload Documents",
-            type=["txt", "md", "pdf", "json", "jsonl"],
+            type=["txt", "md", "pdf", "json", "jsonl", "py"],
             accept_multiple_files=True,
             key=f"file_uploader_{st.session_state.get('upload_key', 0)}",
-            help="Upload .txt, .md, .pdf, .json, or .jsonl files to index.",
+            help="Upload .txt, .md, .pdf, .json, .jsonl, or .py files to index.",
         )
 
         rebuild_clicked = st.button(

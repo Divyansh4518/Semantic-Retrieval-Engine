@@ -16,6 +16,7 @@ Supported formats
                sweep outputs). Each record is rendered as a human-readable
                one-line text summary.
 * ``.json``  — Single JSON object or array; rendered as formatted text.
+* ``.py``    — Python source files read verbatim as text.
 
 Usage
 -----
@@ -39,7 +40,7 @@ from typing import Iterator
 logger = logging.getLogger(__name__)
 
 # Default set of file extensions the loader will process.
-_DEFAULT_EXTENSIONS: frozenset[str] = frozenset({".md", ".txt", ".pdf", ".jsonl", ".json"})
+_DEFAULT_EXTENSIONS: frozenset[str] = frozenset({".md", ".txt", ".pdf", ".jsonl", ".json", ".py"})
 
 # Regex that matches a fenced Markdown code block (``` ... ```).
 _CODE_BLOCK_RE = re.compile(r"```.*?```", re.DOTALL)
@@ -56,7 +57,7 @@ class RepositoryLoader:
         ``str`` and ``pathlib.Path``.
     extensions:
         File extensions to include.  Defaults to ``{".md", ".txt", ".pdf",
-        ".jsonl", ".json"}``.  Pass a custom set to restrict or expand coverage.
+        ".jsonl", ".json", ".py"}``.  Pass a custom set to restrict or expand coverage.
     strip_code_blocks:
         When ``True`` (default), fenced code blocks are removed from Markdown
         files before the text is returned.  This avoids polluting the chunk
