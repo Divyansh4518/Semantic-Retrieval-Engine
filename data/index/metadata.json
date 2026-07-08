@@ -1,0 +1,8 @@
+{
+  "document_count": 148,
+  "embedding_dim": 384,
+  "M": 32,
+  "ef_construction": 200,
+  "ef_search": 64,
+  "faiss_total_vectors": 148
+}
