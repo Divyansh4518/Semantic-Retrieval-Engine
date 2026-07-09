@@ -310,7 +310,7 @@ uv sync
 Create a `.env` file in the project root:
 
 ```
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
+OPENROUTER_API_KEY="sk-or-v1-your-key-here"
 ```
 
 > Without an API key, the app gracefully falls back to the built-in Mock Simulator — no network required.
